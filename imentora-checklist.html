@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMentora — Pre-Infrastructure Checklist</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --bg: #0a0e17; --surface: #111827; --surface2: #1a2234; --border: #1e293b;
+    --accent: #06b6d4; --accent2: #8b5cf6; --accent3: #f59e0b; --accent4: #10b981;
+    --accent5: #ef4444; --accent6: #ec4899;
+    --text: #e2e8f0; --text-dim: #94a3b8; --text-bright: #f8fafc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  .hero { text-align: center; padding: 40px 20px 20px; position: relative; }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(139,92,246,0.06) 0%, transparent 50%);
+  }
+  .hero h1 {
+    font-size: 2.4rem; font-weight: 800; position: relative;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero .sub { font-size: 0.95rem; color: var(--text-dim); position: relative; margin-top: 4px; }
+
+  .tabs {
+    display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 100; background: var(--bg);
+    padding: 10px 12px 12px; border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 500; transition: all 0.3s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(139,92,246,0.15)); border-color: var(--accent); color: var(--text-bright); }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .sec-head {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+  .sec-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .sec-head h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-bright); }
+  .sec-head p { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Checklist */
+  .checklist { margin-bottom: 24px; }
+  .cl-group {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .cl-group-head {
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .cl-group-head:hover { background: var(--surface2); }
+  .cl-group-head .icon { font-size: 1.2rem; }
+  .cl-group-head h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-bright); flex: 1; }
+  .cl-group-head .count {
+    font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;
+    padding: 3px 10px; border-radius: 10px;
+  }
+  .count.done { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .count.pending { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .count.critical { background: rgba(239,68,68,0.15); color: var(--accent5); }
+  .cl-group-head .arrow { color: var(--text-dim); transition: transform 0.3s; font-size: 0.8rem; }
+  .cl-group.open .arrow { transform: rotate(180deg); }
+  .cl-group .cl-body { display: none; padding: 0 20px 16px; }
+  .cl-group.open .cl-body { display: block; }
+
+  .cl-item {
+    display: flex; align-items: flex-start; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid rgba(30,41,59,0.5); font-size: 0.84rem;
+  }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-check {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
+    flex-shrink: 0; margin-top: 2px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; transition: all 0.2s;
+    font-size: 0.7rem; color: transparent;
+  }
+  .cl-check.checked { background: var(--accent4); border-color: var(--accent4); color: white; }
+  .cl-check.known { background: rgba(16,185,129,0.2); border-color: var(--accent4); color: var(--accent4); }
+  .cl-info { flex: 1; }
+  .cl-info .title { color: var(--text-bright); font-weight: 500; }
+  .cl-info .desc { color: var(--text-dim); font-size: 0.78rem; margin-top: 2px; }
+  .cl-info .where {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    color: var(--accent); margin-top: 4px; padding: 4px 10px;
+    background: rgba(6,182,212,0.06); border-radius: 4px; display: inline-block;
+  }
+  .cl-info .cmd {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    color: var(--accent3); background: rgba(245,158,11,0.06);
+    padding: 6px 10px; border-radius: 4px; margin-top: 4px; display: block;
+    border-left: 2px solid var(--accent3);
+  }
+  .cl-status {
+    flex-shrink: 0; font-size: 0.7rem; font-weight: 600;
+    padding: 3px 10px; border-radius: 4px;
+  }
+  .st-known { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .st-needed { background: rgba(239,68,68,0.15); color: var(--accent5); }
+  .st-check { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .st-decide { background: rgba(139,92,246,0.15); color: var(--accent2); }
+
+  /* Decision box */
+  .decision-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 14px;
+    border-left: 3px solid;
+  }
+  .decision-box h4 { font-size: 0.9rem; font-weight: 600; color: var(--text-bright); margin-bottom: 8px; }
+  .decision-box .options { margin-top: 10px; }
+  .decision-opt {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+    border-radius: 6px; margin-bottom: 6px; font-size: 0.82rem; transition: background 0.2s;
+  }
+  .decision-opt:hover { background: var(--surface2); }
+  .decision-opt .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.68rem; font-weight: 600; flex-shrink: 0; margin-top: 2px;
+  }
+  .tag-rec { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .tag-alt { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .tag-no { background: rgba(239,68,68,0.1); color: var(--accent5); }
+  .decision-opt .text { color: var(--text-dim); }
+  .decision-opt .text strong { color: var(--text); }
+
+  /* Code block */
+  .code-block {
+    background: #0d1117; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin: 14px 0;
+  }
+  .code-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; background: rgba(30,41,59,0.5);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-head span { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--text-dim); }
+  .code-head .lang { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(6,182,212,0.1); color: var(--accent); }
+  .code-body {
+    padding: 14px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; line-height: 1.7; color: #e6edf3;
+    overflow-x: auto; white-space: pre;
+  }
+  .comment { color: #6b7b8d; }
+
+  /* Summary card */
+  .summary-card {
+    background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(6,182,212,0.2); border-radius: 14px;
+    padding: 22px; margin: 20px 0;
+  }
+  .summary-card h3 { color: var(--text-bright); margin-bottom: 12px; font-size: 1rem; }
+  .s-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(30,41,59,0.5); font-size: 0.82rem; }
+  .s-row:last-child { border-bottom: none; }
+  .s-row .lbl { color: var(--text-dim); }
+  .s-row .val { font-weight: 600; }
+
+  .info-note {
+    background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 8px; padding: 14px 16px; margin: 14px 0;
+    font-size: 0.82rem; color: var(--text-dim);
+  }
+  .info-note strong { color: var(--accent3); }
+  .info-note.green { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.2); }
+  .info-note.green strong { color: var(--accent4); }
+  .info-note.red { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.2); }
+  .info-note.red strong { color: var(--accent5); }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.6rem; }
+    .tab { padding: 7px 10px; font-size: 0.72rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Pre-Infrastructure Checklist</h1>
+  <p class="sub">Gather this information before writing any Terraform</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-t="files">📂 Files to Check</button>
+  <button class="tab" data-t="app">🔍 App Analysis</button>
+  <button class="tab" data-t="aws">☁️ AWS Requirements</button>
+  <button class="tab" data-t="decisions">🤔 Decisions Needed</button>
+  <button class="tab" data-t="summary">✅ Final Summary</button>
+</div>
+
+<!-- ============== FILES TO CHECK ============== -->
+<div class="panel active container" id="files">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(6,182,212,0.15); color: var(--accent);">📂</div>
+    <div>
+      <h2>Files to Check in Your Repository</h2>
+      <p>Exact files to examine and what info to extract from each</p>
+    </div>
+  </div>
+
+  <div class="info-note">
+    <strong>⚡ Why check these files?</strong> Infrastructure sizing depends on what your app ACTUALLY uses — not what documentation says. We need to verify ports, dependencies, environment variables, database connections, and resource usage from the source code itself.
+  </div>
+
+  <!-- Group 1: Core Config Files -->
+  <div class="checklist">
+    <div class="cl-group open">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">📄</span>
+        <h3>1. requirements.txt / package.json</h3>
+        <span class="count critical">CRITICAL</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Python dependencies and versions</div>
+            <div class="desc">Needed to build correct Docker image, identify system packages (FFmpeg, etc.), and determine base image</div>
+            <div class="where">📍 App/requirements.txt</div>
+            <div class="cmd">cat requirements.txt | grep -E "fastapi|uvicorn|pymongo|mysql|openai|groq|pydub|scipy|reportlab|langchain"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Frontend dependencies (if React build needed)</div>
+            <div class="desc">Weekly Interview uses React — need to know if it's a separate container or served by FastAPI</div>
+            <div class="where">📍 TMPS/package.json</div>
+            <div class="cmd">cat package.json | grep -E "react|vite|webpack"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">System-level dependencies</div>
+            <div class="desc">FFmpeg is required — needs to be in Docker image. Check if any other system packages needed (e.g., libsndfile, poppler)</div>
+            <div class="cmd">grep -r "ffmpeg\|subprocess\|os.system\|popen" App/ --include="*.py" -l</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 2: Environment Variables -->
+    <div class="cl-group open">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🔐</span>
+        <h3>2. .env File — All Environment Variables</h3>
+        <span class="count critical">CRITICAL</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Complete list of ALL env variables used</div>
+            <div class="desc">Every env var becomes a Kubernetes Secret or ConfigMap. Missing one = broken deployment</div>
+            <div class="where">📍 App/.env or App/daily_standup/.env</div>
+            <div class="cmd">grep -r "os.environ\|os.getenv\|dotenv\|env(" App/ --include="*.py" | sort -u</div>
+          </div>
+          <span class="cl-status st-needed">NEEDED</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">API Keys to store in AWS Secrets Manager</div>
+            <div class="desc">OPENAI_API_KEY, GROQ_API_KEY — these go in Secrets Manager, NOT in K8s ConfigMap</div>
+            <div class="cmd">List all API keys: OPENAI_API_KEY, GROQ_API_KEY, any others?</div>
+          </div>
+          <span class="cl-status st-needed">NEEDED</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Database connection strings</div>
+            <div class="desc">Current MongoDB URI, MySQL host/user/pass — these will change to AWS endpoints</div>
+            <div class="where">📍 App/daily_standup/core/config.py, App/weekend_mocktest/core/config.py</div>
+            <div class="cmd">grep -r "MONGO\|MYSQL\|SQL_SERVER\|DATABASE" App/ --include="*.py" | grep -i "host\|uri\|port\|user\|pass"</div>
+          </div>
+          <span class="cl-status st-needed">NEEDED</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">USE_DUMMY_DATA flag behavior</div>
+            <div class="desc">Need to know: does this bypass ALL database calls? Or just MySQL? Affects database dependency</div>
+            <div class="cmd">grep -r "USE_DUMMY_DATA\|DUMMY" App/ --include="*.py" -A 5</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 3: Dockerfile -->
+    <div class="cl-group open">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🐳</span>
+        <h3>3. Dockerfile & docker-compose.yml</h3>
+        <span class="count critical">CRITICAL</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Existing Dockerfile — does it exist?</div>
+            <div class="desc">Your docs mention Dockerfile exists. Need to check if it's production-ready or needs rewriting</div>
+            <div class="where">📍 App/Dockerfile</div>
+            <div class="cmd">cat Dockerfile  # Check base image, multi-stage?, user permissions, health check</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">docker-compose.yml — existing services</div>
+            <div class="desc">Shows how services are currently connected — helps design K8s deployment</div>
+            <div class="where">📍 App/docker-compose.yml</div>
+            <div class="cmd">cat docker-compose.yml  # Check services, ports, volumes, networks</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">How many containers needed?</div>
+            <div class="desc">Is it 1 container (monolith with all 3 modules)? Or 3 separate containers? This changes K8s deployment strategy entirely</div>
+            <div class="cmd">Check: Does app.py mount all 3 modules in ONE process, or are they separate?</div>
+          </div>
+          <span class="cl-status st-decide">DECIDE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 4: Application Entry Point -->
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🚀</span>
+        <h3>4. app.py / main.py — Entry Points</h3>
+        <span class="count critical">CRITICAL</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Application port(s)</div>
+            <div class="desc">Which port(s) does the app listen on? Docs say 8030. Verify in code</div>
+            <div class="where">📍 App/app.py (or main.py)</div>
+            <div class="cmd">grep -r "port\|8030\|8080\|3000" App/app.py App/main.py</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Mount paths for sub-applications</div>
+            <div class="desc">e.g., /daily_standup, /weekend_mocktest, /weekly_interview — needed for K8s ingress routing</div>
+            <div class="cmd">grep -r "mount\|include_router\|app.mount" App/app.py</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">WebSocket paths</div>
+            <div class="desc">WebSocket routes need special ingress annotations (upgrade headers). Need exact paths</div>
+            <div class="cmd">grep -r "websocket\|WebSocket\|ws/" App/ --include="*.py" | grep -i "route\|path\|endpoint"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Health check endpoint</div>
+            <div class="desc">K8s liveness/readiness probes need a health endpoint. Does /health exist?</div>
+            <div class="cmd">grep -r "health" App/ --include="*.py" | grep -i "route\|get\|endpoint"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Uvicorn worker count</div>
+            <div class="desc">How many workers? This affects memory per pod. Default is 1, docs mention --workers 4</div>
+            <div class="cmd">grep -r "workers\|uvicorn" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 5: Database Schemas -->
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🗄️</span>
+        <h3>5. Database Connections & Schemas</h3>
+        <span class="count critical">CRITICAL</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">MongoDB collections used</div>
+            <div class="desc">ml_notes.summaries, ml_notes.interview_results — any others? Need for DocumentDB migration</div>
+            <div class="where">📍 App/*/core/database.py</div>
+            <div class="cmd">grep -r "collection\|\.find\|\.insert\|\.update" App/ --include="*.py" | grep -v __pycache__</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">MongoDB query patterns</div>
+            <div class="desc">DocumentDB doesn't support all MongoDB features. Need to check for $lookup, change streams, transactions</div>
+            <div class="cmd">grep -r "\$lookup\|\$graphLookup\|change_stream\|start_session\|with_transaction" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">MySQL tables and queries</div>
+            <div class="desc">tbl_Student confirmed. Any other tables? Complex joins? Stored procedures?</div>
+            <div class="cmd">grep -r "SELECT\|INSERT\|UPDATE\|CREATE\|tbl_" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">MySQL vs SQL Server</div>
+            <div class="desc">Docs mention both MySQL and SQL Server (pyodbc). Which is actually used? This changes RDS engine choice</div>
+            <div class="cmd">grep -r "mysql\|pyodbc\|pymssql\|sql.server\|mssql" App/requirements.txt App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-decide">DECIDE</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Current database sizes</div>
+            <div class="desc">How much data in MongoDB? How many student records? Affects storage sizing</div>
+            <div class="cmd">MongoDB: db.summaries.count() + db.summaries.stats()
+MySQL: SELECT COUNT(*) FROM tbl_Student</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 6: Static Files & Storage -->
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">📁</span>
+        <h3>6. File Storage & Static Assets</h3>
+        <span class="count pending">IMPORTANT</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Audio file storage (temp/ and audio/ directories)</div>
+            <div class="desc">TTS generates audio files, STT processes uploads. Where stored? How cleaned up? K8s pods have ephemeral storage — files die with pod restart</div>
+            <div class="where">📍 App/daily_standup/audio/, App/daily_standup/temp/</div>
+            <div class="cmd">grep -r "audio/\|temp/\|reports/\|\.wav\|\.mp3" App/ --include="*.py" | grep -i "save\|write\|open"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">PDF report storage</div>
+            <div class="desc">Generated PDFs in reports/ — are they served immediately and deleted? Or stored for later download?</div>
+            <div class="where">📍 App/daily_standup/reports/, App/weekly_interview/</div>
+            <div class="cmd">If stored for later → Need S3 bucket or PersistentVolume
+If serve-and-delete → Ephemeral storage is fine</div>
+          </div>
+          <span class="cl-status st-decide">DECIDE</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Static frontend files</div>
+            <div class="desc">HTML/JS files served by FastAPI static mount. Verify paths match container structure</div>
+            <div class="cmd">grep -r "StaticFiles\|static\|mount.*html" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 7: SSL & Networking -->
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🔒</span>
+        <h3>7. SSL, CORS & Networking</h3>
+        <span class="count pending">IMPORTANT</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">CORS configuration</div>
+            <div class="desc">Current CORS origins — need to update for new domain (lancieretech.com subdomains)</div>
+            <div class="cmd">grep -r "CORS\|cors\|origins\|allow_origins" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">SSL certificates in code</div>
+            <div class="desc">Docs mention HTTPS with SSL. Are certs hardcoded in app.py? On AWS, ACM + ALB handles SSL — app runs plain HTTP inside cluster</div>
+            <div class="cmd">grep -r "ssl\|cert\|\.pem\|\.key\|https" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Hardcoded IPs or hostnames</div>
+            <div class="desc">Code references 192.168.48.201 and 192.168.48.199 — ALL must be replaced with env vars for cloud deployment</div>
+            <div class="cmd">grep -rn "192\.168\|localhost\|127\.0\.0\.1" App/ --include="*.py"</div>
+          </div>
+          <span class="cl-status st-needed">FIX NEEDED</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 8: YOLO -->
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">👁️</span>
+        <h3>8. YOLO Model (GPU Decision)</h3>
+        <span class="count critical">DECIDES GPU</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Does interview_monitor.py load a model locally?</div>
+            <div class="desc">If it imports ultralytics/YOLO and loads weights → GPU needed. If it calls an API → No GPU</div>
+            <div class="where">📍 App/yolo_model/interview_monitor.py</div>
+            <div class="cmd">grep -r "from ultralytics\|YOLO(\|model.predict\|torch\|cuda" App/yolo_model/</div>
+          </div>
+          <span class="cl-status st-needed">CHECK NOW</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Model file (.pt, .onnx) in repository?</div>
+            <div class="desc">If .pt or .onnx files exist → local inference → GPU needed for that service</div>
+            <div class="cmd">find App/ -name "*.pt" -o -name "*.onnx" -o -name "*.weights" -o -name "*.h5"</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Is YOLO used in production or just development?</div>
+            <div class="desc">If it's a dev-only monitoring tool, it doesn't need to run in the EKS cluster at all</div>
+            <div class="cmd">Ask team: Is interview_monitor.py deployed to production, or dev-only tooling?</div>
+          </div>
+          <span class="cl-status st-decide">ASK TEAM</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== APP ANALYSIS ============== -->
+<div class="panel container" id="app">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(139,92,246,0.15); color: var(--accent2);">🔍</div>
+    <div>
+      <h2>Application Architecture Analysis</h2>
+      <p>Run these commands on your current server to extract exact information</p>
+    </div>
+  </div>
+
+  <div class="info-note green">
+    <strong>💡 One-shot script:</strong> Run this on your current Linux server (192.168.48.201) where the app is running. It extracts everything we need in one go.
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>run-on-server.sh</span><span class="lang">Bash</span></div>
+    <div class="code-body">#!/bin/bash
+<span class="comment"># ═══════════════════════════════════════════════════════════</span>
+<span class="comment"># iMentora Infrastructure Discovery Script</span>
+<span class="comment"># Run this on your current server: bash run-on-server.sh</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════</span>
+
+APP_DIR="/path/to/your/App"  <span class="comment"># ← CHANGE THIS to your actual App directory</span>
+OUTPUT="imentora-infra-discovery.txt"
+
+echo "═══ iMentora Infrastructure Discovery ═══" > $OUTPUT
+echo "Date: $(date)" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 1. Python Dependencies ───</span>
+echo "═══ 1. PYTHON DEPENDENCIES ═══" >> $OUTPUT
+cat $APP_DIR/requirements.txt >> $OUTPUT 2>/dev/null || echo "No requirements.txt found" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 2. All Environment Variables Referenced in Code ───</span>
+echo "═══ 2. ENVIRONMENT VARIABLES USED IN CODE ═══" >> $OUTPUT
+grep -rn "os.environ\|os.getenv\|env(" $APP_DIR/ --include="*.py" | \
+  grep -v __pycache__ | sort -u >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 3. Current .env File (REDACT SENSITIVE VALUES) ───</span>
+echo "═══ 3. ENV FILE STRUCTURE (keys only) ═══" >> $OUTPUT
+if [ -f "$APP_DIR/.env" ]; then
+  cat $APP_DIR/.env | sed 's/=.*/=***REDACTED***/' >> $OUTPUT
+fi
+find $APP_DIR -name ".env" -not -path "*/__pycache__/*" | while read f; do
+  echo "Found .env at: $f" >> $OUTPUT
+  cat "$f" | sed 's/=.*/=***REDACTED***/' >> $OUTPUT
+done
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 4. Application Ports ───</span>
+echo "═══ 4. PORTS USED ═══" >> $OUTPUT
+grep -rn "port\|8030\|8080\|3000\|5000" $APP_DIR/app.py $APP_DIR/main.py 2>/dev/null >> $OUTPUT
+grep -rn "uvicorn.run\|--port" $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 5. Application Mount Points (Sub-apps) ───</span>
+echo "═══ 5. APP MOUNT POINTS & ROUTES ═══" >> $OUTPUT
+grep -rn "app.mount\|include_router\|APIRouter" $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 6. WebSocket Endpoints ───</span>
+echo "═══ 6. WEBSOCKET ENDPOINTS ═══" >> $OUTPUT
+grep -rn "websocket\|WebSocket\|ws/" $APP_DIR/ --include="*.py" | \
+  grep -vi __pycache__ | grep -i "route\|path\|endpoint\|def " >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 7. Health Check Endpoints ───</span>
+echo "═══ 7. HEALTH CHECKS ═══" >> $OUTPUT
+grep -rn "health" $APP_DIR/ --include="*.py" | grep -vi __pycache__ | \
+  grep -i "route\|get\|endpoint\|def " >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 8. Database Connections ───</span>
+echo "═══ 8. DATABASE CONNECTIONS ═══" >> $OUTPUT
+grep -rn "MongoClient\|pymongo\|mysql.connector\|pyodbc\|pymssql\|create_engine" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 9. MongoDB Collections ───</span>
+echo "═══ 9. MONGODB COLLECTIONS USED ═══" >> $OUTPUT
+grep -rn "\.collection\|db\.\|\.find\|\.insert\|\.update\|\.aggregate" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ | \
+  grep -v "test\|example\|comment" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 10. MongoDB Incompatible Operations ───</span>
+echo "═══ 10. DOCUMENTDB COMPATIBILITY CHECK ═══" >> $OUTPUT
+echo "Checking for unsupported DocumentDB features..." >> $OUTPUT
+grep -rn "\$lookup\|\$graphLookup\|change_stream\|watch()\|start_session\|with_transaction" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT || echo "No incompatible operations found ✓" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 11. Hardcoded IPs (MUST FIX) ───</span>
+echo "═══ 11. HARDCODED IPS (MUST BE REPLACED) ═══" >> $OUTPUT
+grep -rn "192\.168\|10\.0\.\|172\.16\.\|localhost\|127\.0\.0\.1" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 12. SSL/HTTPS Config ───</span>
+echo "═══ 12. SSL/HTTPS CONFIGURATION ═══" >> $OUTPUT
+grep -rn "ssl\|cert\|\.pem\|\.key\|https\|ssl_context" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 13. YOLO / GPU Check ───</span>
+echo "═══ 13. YOLO / GPU REQUIREMENTS ═══" >> $OUTPUT
+grep -rn "ultralytics\|YOLO\|torch\|cuda\|model.predict\|\.pt\b" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+find $APP_DIR -name "*.pt" -o -name "*.onnx" -o -name "*.weights" 2>/dev/null >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 14. File Storage Paths ───</span>
+echo "═══ 14. FILE STORAGE PATHS ═══" >> $OUTPUT
+grep -rn "audio/\|temp/\|reports/\|static/\|uploads/" \
+  $APP_DIR/ --include="*.py" | grep -vi __pycache__ | \
+  grep -i "save\|write\|open\|path\|mkdir" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 15. CORS Configuration ───</span>
+echo "═══ 15. CORS SETTINGS ═══" >> $OUTPUT
+grep -rn "CORS\|cors\|allow_origins\|CORSMiddleware" \
+  $APP_DIR/ --include="*.py" | grep -v __pycache__ >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 16. Existing Dockerfile ───</span>
+echo "═══ 16. EXISTING DOCKERFILE ═══" >> $OUTPUT
+cat $APP_DIR/Dockerfile >> $OUTPUT 2>/dev/null || echo "No Dockerfile found" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 17. Docker Compose ───</span>
+echo "═══ 17. DOCKER COMPOSE ═══" >> $OUTPUT
+cat $APP_DIR/docker-compose.yml >> $OUTPUT 2>/dev/null || echo "No docker-compose.yml found" >> $OUTPUT
+echo "" >> $OUTPUT
+
+<span class="comment"># ─── 18. Current MongoDB Stats ───</span>
+echo "═══ 18. MONGODB DATA SIZE ═══" >> $OUTPUT
+echo "Run manually:" >> $OUTPUT
+echo "mongo mongodb://connectly:LT@connect25@192.168.48.201:27017/admin --eval 'db=db.getSiblingDB(\"ml_notes\"); print(\"Collections:\", db.getCollectionNames()); db.getCollectionNames().forEach(c => print(c, db[c].count(), db[c].stats().size))'" >> $OUTPUT
+echo "" >> $OUTPUT
+
+echo "═══ DISCOVERY COMPLETE ═══" >> $OUTPUT
+echo ""
+echo "✅ Output saved to: $OUTPUT"
+echo "📤 Share this file (after reviewing for sensitive data)"</div>
+  </div>
+
+  <div class="info-note red">
+    <strong>⚠️ SECURITY:</strong> The script redacts .env values automatically, but <strong>review the output file before sharing</strong>. Remove any actual passwords, API keys, or connection strings that may appear in the grep results from Python files.
+  </div>
+</div>
+
+<!-- ============== AWS REQUIREMENTS ============== -->
+<div class="panel container" id="aws">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(245,158,11,0.15); color: var(--accent3);">☁️</div>
+    <div>
+      <h2>AWS Account Requirements</h2>
+      <p>Pre-requisites to set up before Terraform runs</p>
+    </div>
+  </div>
+
+  <div class="checklist">
+    <div class="cl-group open">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🔑</span>
+        <h3>AWS Account Setup (One-Time)</h3>
+        <span class="count critical">DO FIRST</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check known">✓</div>
+          <div class="cl-info">
+            <div class="title">AWS Account ID</div>
+            <div class="desc">664418964913 — confirmed</div>
+          </div>
+          <span class="cl-status st-known">KNOWN</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check known">✓</div>
+          <div class="cl-info">
+            <div class="title">Region</div>
+            <div class="desc">ap-south-1 (Mumbai) — confirmed</div>
+          </div>
+          <span class="cl-status st-known">KNOWN</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">IAM User/Role with Admin access for Terraform</div>
+            <div class="desc">Terraform needs an IAM entity with sufficient permissions to create VPC, EKS, RDS, etc.</div>
+            <div class="cmd">aws sts get-caller-identity  # Verify which identity is configured</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">S3 Bucket for Terraform State</div>
+            <div class="desc">Must be created BEFORE running Terraform. Suggest: <code>imentora-terraform-state-664418964913</code></div>
+            <div class="cmd">aws s3 mb s3://imentora-terraform-state-664418964913 --region ap-south-1
+aws s3api put-bucket-versioning --bucket imentora-terraform-state-664418964913 \
+  --versioning-configuration Status=Enabled</div>
+          </div>
+          <span class="cl-status st-needed">CREATE</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">DynamoDB Table for State Locking</div>
+            <div class="desc">Prevents concurrent Terraform runs from corrupting state</div>
+            <div class="cmd">aws dynamodb create-table \
+  --table-name imentora-terraform-lock \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region ap-south-1</div>
+          </div>
+          <span class="cl-status st-needed">CREATE</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">GitHub OIDC Provider in AWS (if using OIDC auth)</div>
+            <div class="desc">Allows GitHub Actions to authenticate to AWS without storing access keys</div>
+            <div class="cmd">aws iam create-open-id-connect-provider \
+  --url "https://token.actions.githubusercontent.com" \
+  --thumbprint-list "6938fd4d98bab03faadb97b34396831e3780aea1" \
+  --client-id-list "sts.amazonaws.com"</div>
+          </div>
+          <span class="cl-status st-decide">IF OIDC</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cl-group open">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🌐</span>
+        <h3>Domain & DNS Setup</h3>
+        <span class="count pending">BEFORE DEPLOY</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check known">✓</div>
+          <div class="cl-info">
+            <div class="title">Domain name</div>
+            <div class="desc">lancieretech.com — confirmed</div>
+          </div>
+          <span class="cl-status st-known">KNOWN</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Is domain registered on Route53 or external registrar?</div>
+            <div class="desc">If external: need to update nameservers to Route53 hosted zone. If Route53: Terraform manages it directly</div>
+            <div class="cmd">aws route53 list-hosted-zones | grep lancieretech.com</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Subdomains to create</div>
+            <div class="desc">Need to decide subdomains for: application, API, ArgoCD, Grafana, SonarQube</div>
+          </div>
+          <span class="cl-status st-decide">DECIDE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cl-group">
+      <div class="cl-group-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="icon">🔧</span>
+        <h3>GitHub Repository Setup</h3>
+        <span class="count pending">BEFORE CI/CD</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="cl-body">
+        <div class="cl-item">
+          <div class="cl-check known">✓</div>
+          <div class="cl-info">
+            <div class="title">GitHub Organization</div>
+            <div class="desc">lancier-tech-org — confirmed</div>
+          </div>
+          <span class="cl-status st-known">KNOWN</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">Are the 3 repos created?</div>
+            <div class="desc">IMENTORA-app, IMENTORA-gitops, IMENTORA-infra</div>
+            <div class="cmd">gh repo list lancier-tech-org | grep -i imentora</div>
+          </div>
+          <span class="cl-status st-check">CHECK</span>
+        </div>
+        <div class="cl-item">
+          <div class="cl-check" onclick="this.classList.toggle('checked')">✓</div>
+          <div class="cl-info">
+            <div class="title">GitHub Secrets configured</div>
+            <div class="desc">AWS_ACCOUNT_ID, AWS_ROLE_ARN (for OIDC) or AWS_ACCESS_KEY_ID/SECRET, SONAR_TOKEN, GITOPS_PAT</div>
+            <div class="cmd">Go to: GitHub → lancier-tech-org/IMENTORA-app → Settings → Secrets → Actions</div>
+          </div>
+          <span class="cl-status st-needed">SET UP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== DECISIONS ============== -->
+<div class="panel container" id="decisions">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(236,72,153,0.15); color: var(--accent6);">🤔</div>
+    <div>
+      <h2>Decisions You Need to Make</h2>
+      <p>These decisions directly affect infrastructure design</p>
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent5);">
+    <h4>Decision 1: MySQL or SQL Server?</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">Your docs mention BOTH. Daily Standup mentions "SQL Server" with pyodbc. Mock Test mentions "MySQL" with mysql.connector. Weekly Interview mentions both. Which is the actual production database?</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-rec">REC</span><div class="text"><strong>MySQL (RDS)</strong> — If using mysql.connector. Cheaper, simpler, more EKS-compatible</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">ALT</span><div class="text"><strong>SQL Server (RDS)</strong> — If using pyodbc/pymssql. More expensive, needs different RDS engine</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">ALT</span><div class="text"><strong>Both</strong> — If different modules use different DBs (unlikely but check)</div></div>
+    </div>
+    <div class="info-note" style="margin-top: 8px;">
+      <strong>How to verify:</strong> <code>grep -r "mysql\|pyodbc\|pymssql" App/requirements.txt</code> — whichever driver is in requirements.txt is what's actually used.
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent2);">
+    <h4>Decision 2: Single Container (Monolith) or Multi-Container (Microservices)?</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">Currently app.py mounts all 3 modules as sub-apps in one process. For K8s, you can keep this (simpler) or split (more scalable).</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-rec">REC</span><div class="text"><strong>Single container (keep current)</strong> — Simpler deployment, easier to manage. Good for your current scale (100-150 users). One Deployment, one Service in K8s</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">ALT</span><div class="text"><strong>3 separate containers</strong> — Each module scales independently. More complex K8s setup (3 Deployments, 3 Services, ingress routing). Better for 500+ users</div></div>
+    </div>
+    <div class="info-note" style="margin-top: 8px;">
+      <strong>My recommendation:</strong> Start with single container. Split later when a specific module becomes a bottleneck. Premature microservices adds unnecessary complexity.
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent3);">
+    <h4>Decision 3: GitHub → AWS Authentication</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">How should GitHub Actions authenticate to your AWS account to push images and manage infrastructure?</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-rec">REC</span><div class="text"><strong>OIDC (OpenID Connect)</strong> — No stored secrets. GitHub assumes an AWS IAM role with short-lived tokens. Industry best practice. Requires one-time OIDC provider setup</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">ALT</span><div class="text"><strong>IAM Access Keys</strong> — Store AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY in GitHub Secrets. Simpler setup but long-lived credentials = security risk</div></div>
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent4);">
+    <h4>Decision 4: Audio/PDF File Storage Strategy</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">K8s pods have ephemeral storage — files are lost when pod restarts. How should temp audio and generated PDFs be handled?</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-rec">REC</span><div class="text"><strong>Ephemeral + generate-on-demand</strong> — Audio temp files: use emptyDir volume (dies with pod, cleaned automatically). PDFs: generate fresh when user clicks download, don't store</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">ALT</span><div class="text"><strong>S3 for persistence</strong> — Store generated PDFs in S3 for later access. Add S3 bucket to Terraform. Needed only if users download PDFs hours later</div></div>
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent);">
+    <h4>Decision 5: Subdomains</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">Suggest these — confirm or change:</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-rec">APP</span><div class="text"><strong>app.lancieretech.com</strong> — Main iMentora application</div></div>
+      <div class="decision-opt"><span class="tag tag-rec">API</span><div class="text"><strong>api.lancieretech.com</strong> — API endpoint (if separated)</div></div>
+      <div class="decision-opt"><span class="tag tag-rec">OPS</span><div class="text"><strong>argocd.lancieretech.com</strong> — ArgoCD dashboard</div></div>
+      <div class="decision-opt"><span class="tag tag-rec">MON</span><div class="text"><strong>grafana.lancieretech.com</strong> — Grafana monitoring</div></div>
+      <div class="decision-opt"><span class="tag tag-alt">QA</span><div class="text"><strong>sonar.lancieretech.com</strong> — SonarQube (if self-hosted)</div></div>
+    </div>
+  </div>
+
+  <div class="decision-box" style="border-left-color: var(--accent6);">
+    <h4>Decision 6: SonarQube — Self-Hosted or Cloud?</h4>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px;">SonarQube for SAST scanning in CI/CD pipeline</p>
+    <div class="options">
+      <div class="decision-opt"><span class="tag tag-alt">SELF</span><div class="text"><strong>Self-hosted on EKS</strong> — Full control, no ongoing cost beyond compute. Needs ~2 GB RAM on cluster. More DevOps work to maintain</div></div>
+      <div class="decision-opt"><span class="tag tag-rec">CLOUD</span><div class="text"><strong>SonarCloud (sonarcloud.io)</strong> — Free for open-source, paid for private repos. Zero maintenance. Easier CI/CD integration</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== FINAL SUMMARY ============== -->
+<div class="panel container" id="summary">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(16,185,129,0.15); color: var(--accent4);">✅</div>
+    <div>
+      <h2>Final Summary — What I Need From You</h2>
+      <p>Complete this list and I'll start building the Terraform infrastructure</p>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📤 ACTION 1: Run the Discovery Script</h3>
+    <div class="s-row"><span class="lbl">What</span><span class="val" style="color: var(--accent);">Run the bash script from "App Analysis" tab on your server</span></div>
+    <div class="s-row"><span class="lbl">Where</span><span class="val" style="color: var(--text-dim);">On 192.168.48.201 where the app currently runs</span></div>
+    <div class="s-row"><span class="lbl">Output</span><span class="val" style="color: var(--text-dim);">imentora-infra-discovery.txt — share this with me</span></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📤 ACTION 2: Share These Key Files</h3>
+    <div class="s-row"><span class="lbl">File 1</span><span class="val" style="color: var(--accent);">requirements.txt</span></div>
+    <div class="s-row"><span class="lbl">File 2</span><span class="val" style="color: var(--accent);">Dockerfile (if exists)</span></div>
+    <div class="s-row"><span class="lbl">File 3</span><span class="val" style="color: var(--accent);">docker-compose.yml (if exists)</span></div>
+    <div class="s-row"><span class="lbl">File 4</span><span class="val" style="color: var(--accent);">.env structure (keys only, NOT values)</span></div>
+    <div class="s-row"><span class="lbl">File 5</span><span class="val" style="color: var(--accent);">app.py (main entry point)</span></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📤 ACTION 3: Answer These 6 Decisions</h3>
+    <div class="s-row"><span class="lbl">D1</span><span class="val" style="color: var(--accent3);">MySQL or SQL Server?</span></div>
+    <div class="s-row"><span class="lbl">D2</span><span class="val" style="color: var(--accent3);">Single container or microservices?</span></div>
+    <div class="s-row"><span class="lbl">D3</span><span class="val" style="color: var(--accent3);">GitHub auth: OIDC or Access Keys?</span></div>
+    <div class="s-row"><span class="lbl">D4</span><span class="val" style="color: var(--accent3);">File storage: Ephemeral or S3?</span></div>
+    <div class="s-row"><span class="lbl">D5</span><span class="val" style="color: var(--accent3);">Confirm subdomains</span></div>
+    <div class="s-row"><span class="lbl">D6</span><span class="val" style="color: var(--accent3);">SonarQube: Self-hosted or Cloud?</span></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📤 ACTION 4: Verify YOLO Model (GPU Decision)</h3>
+    <div class="s-row"><span class="lbl">Check</span><span class="val" style="color: var(--accent5);">Does yolo_model/interview_monitor.py run inference locally?</span></div>
+    <div class="s-row"><span class="lbl">How</span><span class="val" style="color: var(--text-dim);">grep "YOLO(\|model.predict\|torch" App/yolo_model/</span></div>
+    <div class="s-row"><span class="lbl">If Yes</span><span class="val" style="color: var(--text-dim);">We add a separate GPU node group (g4dn.xlarge)</span></div>
+    <div class="s-row"><span class="lbl">If No</span><span class="val" style="color: var(--text-dim);">No GPU needed, proceed with m5.xlarge</span></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📤 ACTION 5: AWS Prerequisites (Create Before Terraform)</h3>
+    <div class="s-row"><span class="lbl">1</span><span class="val" style="color: var(--accent);">S3 bucket for Terraform state</span></div>
+    <div class="s-row"><span class="lbl">2</span><span class="val" style="color: var(--accent);">DynamoDB table for state locking</span></div>
+    <div class="s-row"><span class="lbl">3</span><span class="val" style="color: var(--accent);">IAM user/role for Terraform (Admin access)</span></div>
+    <div class="s-row"><span class="lbl">4</span><span class="val" style="color: var(--accent);">OIDC provider (if choosing OIDC auth)</span></div>
+    <div class="s-row"><span class="lbl">5</span><span class="val" style="color: var(--accent);">Route53 hosted zone for lancieretech.com</span></div>
+  </div>
+
+  <div class="info-note green">
+    <strong>🚀 Once you provide the above, here's what I'll build:</strong> Complete IMENTORA-infra repo with all 7 Terraform modules (VPC, EKS, ECR, RDS, DocumentDB, ElastiCache, SonarQube), environment configs (dev/prod), CI/CD pipeline for infrastructure, production-hardened Dockerfile, K8s manifests for IMENTORA-gitops, and ArgoCD application configs. End-to-end, ready to <code>terraform apply</code>.
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.t).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

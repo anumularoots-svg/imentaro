@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMentora — Infrastructure Sizing Recommendations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --border: #1e293b;
+    --accent: #06b6d4;
+    --accent2: #8b5cf6;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --accent5: #ef4444;
+    --accent6: #ec4899;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-bright: #f8fafc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+
+  .hero {
+    text-align: center;
+    padding: 50px 20px 30px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(139,92,246,0.06) 0%, transparent 50%);
+  }
+  .hero h1 {
+    font-size: 2.6rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    position: relative;
+  }
+  .hero .sub { font-size: 1rem; color: var(--text-dim); position: relative; margin-top: 6px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg); padding: 12px 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 500;
+    transition: all 0.3s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active {
+    background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(139,92,246,0.15));
+    border-color: var(--accent); color: var(--text-bright);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Section header */
+  .sec-head {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sec-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .sec-head h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); }
+  .sec-head p { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Analysis cards */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .a-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    border-left: 3px solid; transition: all 0.3s;
+  }
+  .a-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .a-card h4 { font-size: 0.92rem; font-weight: 600; color: var(--text-bright); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .a-card .detail { font-size: 0.8rem; color: var(--text-dim); padding: 3px 0 3px 14px; position: relative; }
+  .a-card .detail::before { content: '›'; position: absolute; left: 0; opacity: 0.5; }
+
+  /* Recommendation boxes */
+  .rec-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; margin-bottom: 16px;
+    position: relative; overflow: hidden;
+  }
+  .rec-box::before {
+    content: attr(data-label);
+    position: absolute; top: 0; right: 0;
+    padding: 4px 14px; font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    border-radius: 0 14px 0 10px;
+  }
+  .rec-box.recommended::before { background: rgba(16,185,129,0.2); color: var(--accent4); }
+  .rec-box.alternative::before { background: rgba(245,158,11,0.2); color: var(--accent3); }
+  .rec-box.production::before { background: rgba(139,92,246,0.2); color: var(--accent2); }
+
+  .rec-box h3 {
+    font-size: 1.15rem; font-weight: 700; color: var(--text-bright); margin-bottom: 4px;
+  }
+  .rec-box .price { font-size: 0.85rem; color: var(--accent3); margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; }
+
+  .spec-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px; margin: 14px 0;
+  }
+  .spec {
+    background: var(--surface2); border-radius: 8px; padding: 12px;
+    text-align: center;
+  }
+  .spec .num { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .spec .lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  .why-box {
+    background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.15);
+    border-radius: 8px; padding: 14px 16px; margin-top: 12px;
+    font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+  }
+  .why-box strong { color: var(--accent); }
+
+  /* Workload meter */
+  .meter-row {
+    display: flex; align-items: center; gap: 12px;
+    margin: 6px 0; font-size: 0.8rem;
+  }
+  .meter-label { width: 120px; color: var(--text-dim); flex-shrink: 0; }
+  .meter-bar {
+    flex: 1; height: 8px; background: var(--surface2);
+    border-radius: 4px; overflow: hidden;
+  }
+  .meter-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .meter-val { width: 50px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+  /* Comparison table */
+  .cmp-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  .cmp-table th, .cmp-table td { padding: 10px 14px; text-align: left; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+  .cmp-table th { font-weight: 600; color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; background: var(--surface2); }
+  .cmp-table td { color: var(--text); }
+  .cmp-table .highlight { color: var(--accent4); font-weight: 600; }
+
+  /* Tag */
+  .tag {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 0.7rem; font-weight: 600;
+  }
+  .tag.green { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .tag.yellow { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .tag.red { background: rgba(239,68,68,0.15); color: var(--accent5); }
+  .tag.blue { background: rgba(6,182,212,0.15); color: var(--accent); }
+  .tag.purple { background: rgba(139,92,246,0.15); color: var(--accent2); }
+
+  /* Code block */
+  .code-block {
+    background: #0d1117; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin: 16px 0;
+  }
+  .code-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: rgba(30,41,59,0.5);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-head span { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim); }
+  .code-head .lang { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(6,182,212,0.1); color: var(--accent); }
+  .code-body {
+    padding: 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.73rem; line-height: 1.7; color: #e6edf3;
+    overflow-x: auto; white-space: pre;
+  }
+  .comment { color: #6b7b8d; }
+  .keyword { color: #ff7b72; }
+  .string { color: #a5d6ff; }
+  .val { color: #79c0ff; }
+
+  /* Cost summary */
+  .cost-card {
+    background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 14px; padding: 24px; margin: 20px 0;
+  }
+  .cost-card h3 { color: var(--text-bright); margin-bottom: 14px; font-size: 1.1rem; }
+  .cost-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid rgba(30,41,59,0.5);
+    font-size: 0.82rem;
+  }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row .svc { color: var(--text-dim); }
+  .cost-row .amt { font-family: 'JetBrains Mono', monospace; color: var(--accent3); font-weight: 600; }
+  .cost-total {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0 0; margin-top: 8px; border-top: 2px solid var(--border);
+    font-size: 1rem; font-weight: 700;
+  }
+  .cost-total .amt { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+  /* Env label */
+  .env-label {
+    text-align: center; font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-dim); margin: 24px 0 12px;
+  }
+
+  /* Info note */
+  .info-note {
+    background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 8px; padding: 14px 16px; margin: 16px 0;
+    font-size: 0.82rem; color: var(--text-dim);
+  }
+  .info-note strong { color: var(--accent3); }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.8rem; }
+    .tabs { gap: 4px; }
+    .tab { padding: 8px 10px; font-size: 0.72rem; }
+    .spec-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>iMentora Infrastructure Sizing</h1>
+  <p class="sub">Recommendations based on application workload analysis</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-t="analysis">🔬 Workload Analysis</button>
+  <button class="tab" data-t="eks">☸️ EKS Nodes</button>
+  <button class="tab" data-t="rds">🗄️ RDS (MySQL)</button>
+  <button class="tab" data-t="docdb">📄 DocumentDB</button>
+  <button class="tab" data-t="cache">⚡ ElastiCache</button>
+  <button class="tab" data-t="cost">💰 Cost Estimate</button>
+  <button class="tab" data-t="tfvars">📝 terraform.tfvars</button>
+</div>
+
+<!-- ============== WORKLOAD ANALYSIS ============== -->
+<div class="panel active container" id="analysis">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(6,182,212,0.15); color: var(--accent);">🔬</div>
+    <div>
+      <h2>Application Workload Analysis</h2>
+      <p>Breaking down your 3 modules to determine exact infrastructure needs</p>
+    </div>
+  </div>
+
+  <div class="env-label">Your Application Modules</div>
+  <div class="analysis-grid">
+    <div class="a-card" style="border-left-color: var(--accent);">
+      <h4>🎙️ Daily Standup</h4>
+      <div class="detail">FastAPI + WebSocket (real-time bidirectional)</div>
+      <div class="detail">Groq Whisper STT (external API call)</div>
+      <div class="detail">OpenAI GPT-4 (external API call)</div>
+      <div class="detail">Edge TTS streaming with audio chunks</div>
+      <div class="detail">FFmpeg audio conversion (CPU-heavy)</div>
+      <div class="detail">MongoDB reads/writes per session</div>
+      <div class="detail">PDF generation (ReportLab)</div>
+    </div>
+
+    <div class="a-card" style="border-left-color: var(--accent2);">
+      <h4>📝 Weekend Mock Test</h4>
+      <div class="detail">FastAPI REST API (request/response)</div>
+      <div class="detail">Groq LLM for question generation (batch)</div>
+      <div class="detail">In-memory caching (6-hour TTL)</div>
+      <div class="detail">MongoDB for summaries + results</div>
+      <div class="detail">MySQL for student data</div>
+      <div class="detail">AI evaluation (batch processing)</div>
+      <div class="detail">Target: 150+ concurrent users</div>
+    </div>
+
+    <div class="a-card" style="border-left-color: var(--accent6);">
+      <h4>🎤 Weekly Interview</h4>
+      <div class="detail">FastAPI + WebSocket (45-min sessions)</div>
+      <div class="detail">Groq Whisper transcription per response</div>
+      <div class="detail">OpenAI GPT-4 conversation (20 rounds)</div>
+      <div class="detail">Edge TTS real-time streaming</div>
+      <div class="detail">7-day summary fragment processing</div>
+      <div class="detail">MongoDB full session logging</div>
+      <div class="detail">100+ concurrent interviews target</div>
+    </div>
+  </div>
+
+  <div class="env-label">Resource Consumption Profile</div>
+  <div class="rec-box">
+    <h3>CPU Demand Analysis</h3>
+    <div class="meter-row">
+      <span class="meter-label">FFmpeg Audio</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 85%; background: linear-gradient(90deg, var(--accent5), #f97316);"></div></div>
+      <span class="meter-val" style="color: var(--accent5);">HIGH</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">TTS Generation</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 60%; background: linear-gradient(90deg, var(--accent3), #f59e0b);"></div></div>
+      <span class="meter-val" style="color: var(--accent3);">MED</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">PDF Generation</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 45%; background: linear-gradient(90deg, var(--accent3), #f59e0b);"></div></div>
+      <span class="meter-val" style="color: var(--accent3);">MED</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">API Routing</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 25%; background: linear-gradient(90deg, var(--accent4), #34d399);"></div></div>
+      <span class="meter-val" style="color: var(--accent4);">LOW</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">AI Calls (I/O)</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 15%; background: linear-gradient(90deg, var(--accent4), #34d399);"></div></div>
+      <span class="meter-val" style="color: var(--accent4);">LOW*</span>
+    </div>
+    <div class="why-box">
+      <strong>Key insight:</strong> Your AI calls (Groq, OpenAI) are I/O-bound external API calls — they consume almost zero local CPU. The real CPU consumers are FFmpeg audio processing, Edge TTS generation, and PDF creation. This means you need <strong>balanced compute (CPU + memory)</strong>, not GPU instances.
+    </div>
+  </div>
+
+  <div class="rec-box">
+    <h3>Memory Demand Analysis</h3>
+    <div class="meter-row">
+      <span class="meter-label">WebSocket Conns</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 90%; background: linear-gradient(90deg, var(--accent5), #f97316);"></div></div>
+      <span class="meter-val" style="color: var(--accent5);">HIGH</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">In-Memory Cache</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 75%; background: linear-gradient(90deg, var(--accent5), #f97316);"></div></div>
+      <span class="meter-val" style="color: var(--accent5);">HIGH</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Audio Buffers</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 65%; background: linear-gradient(90deg, var(--accent3), #f59e0b);"></div></div>
+      <span class="meter-val" style="color: var(--accent3);">MED-HI</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Session State</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 55%; background: linear-gradient(90deg, var(--accent3), #f59e0b);"></div></div>
+      <span class="meter-val" style="color: var(--accent3);">MED</span>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Fragment Data</span>
+      <div class="meter-bar"><div class="meter-fill" style="width: 35%; background: linear-gradient(90deg, var(--accent4), #34d399);"></div></div>
+      <span class="meter-val" style="color: var(--accent4);">LOW</span>
+    </div>
+    <div class="why-box">
+      <strong>Key insight:</strong> Each WebSocket connection holds ~2-5 MB (audio buffers, session state, conversation history). With 100 concurrent sessions, that's <strong>200-500 MB just for WebSockets</strong>. Add in-memory caching (mock test questions, 6-hour TTL) and you need <strong>memory-rich nodes</strong>. This is your primary bottleneck.
+    </div>
+  </div>
+
+  <div class="rec-box">
+    <h3>Per-Session Resource Breakdown</h3>
+    <table class="cmp-table">
+      <thead><tr><th>Resource</th><th>Daily Standup</th><th>Mock Test</th><th>Weekly Interview</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>10-15 min</td><td>20-30 min</td><td>~45 min</td></tr>
+        <tr><td>Memory/Session</td><td>~3 MB</td><td>~1 MB</td><td>~5 MB</td></tr>
+        <tr><td>CPU Spikes</td><td>FFmpeg bursts</td><td>Low (API I/O)</td><td>FFmpeg + TTS</td></tr>
+        <tr><td>WebSocket</td><td>Yes (streaming)</td><td>No (REST)</td><td>Yes (streaming)</td></tr>
+        <tr><td>DB Writes/Session</td><td>2-3 docs</td><td>1-2 docs</td><td>3-5 docs</td></tr>
+        <tr><td>External API Calls</td><td>~20 (Groq+OpenAI)</td><td>~2 (Groq batch)</td><td>~40 (Groq+OpenAI)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============== EKS NODES ============== -->
+<div class="panel container" id="eks">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(139,92,246,0.15); color: var(--accent2);">☸️</div>
+    <div>
+      <h2>EKS Node Recommendations</h2>
+      <p>Based on WebSocket-heavy, memory-intensive workload profile</p>
+    </div>
+  </div>
+
+  <!-- DEV ENVIRONMENT -->
+  <div class="env-label">🟢 Development Environment</div>
+
+  <div class="rec-box recommended" data-label="✓ Recommended for Dev">
+    <h3>t3.large</h3>
+    <div class="price">~$0.0832/hr → ~$60/month per node</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">8</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">30</div><div class="lbl">GB Disk</div></div>
+      <div class="spec"><div class="num">Burst</div><div class="lbl">CPU Type</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why t3.large for dev:</strong> Your 3 modules (standup + mocktest + interview) with Uvicorn workers need ~4-6 GB RAM at 10-20 concurrent users. The 8 GB gives headroom for audio processing spikes. Burstable CPU handles intermittent FFmpeg workloads perfectly — you're not doing constant audio processing, just bursts when users speak. At ~$60/month per node, this is cost-efficient for development.
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>Dev EKS Cluster Config</span><span class="lang">Terraform</span></div>
+    <div class="code-body"><span class="comment"># Dev environment — cost-optimized</span>
+<span class="keyword">cluster_name</span>     = <span class="string">"imentora-dev-eks"</span>
+<span class="keyword">kubernetes_version</span> = <span class="string">"1.30"</span>
+
+<span class="comment"># Node Group</span>
+<span class="keyword">node_instance_type</span> = <span class="string">"t3.large"</span>      <span class="comment"># 2 vCPU, 8 GB RAM</span>
+<span class="keyword">node_disk_size</span>     = <span class="val">30</span>              <span class="comment"># GB - enough for images + temp audio</span>
+<span class="keyword">node_min_size</span>      = <span class="val">2</span>               <span class="comment"># Minimum for HA across AZs</span>
+<span class="keyword">node_max_size</span>      = <span class="val">4</span>               <span class="comment"># Scale up during testing</span>
+<span class="keyword">node_desired_size</span>  = <span class="val">2</span>               <span class="comment"># Normal running state</span>
+
+<span class="comment"># Why these numbers:</span>
+<span class="comment"># - 2 nodes × 8 GB = 16 GB total (allocatable ~13 GB after system)</span>
+<span class="comment"># - App pods: ~4 GB | Monitoring: ~3 GB | ArgoCD: ~2 GB | Buffer: ~4 GB</span>
+<span class="comment"># - 2 nodes across 2 AZs = resilient to single AZ failure</span></div>
+  </div>
+
+  <!-- STAGING -->
+  <div class="env-label">🟡 Staging Environment</div>
+
+  <div class="rec-box alternative" data-label="Recommended for Staging">
+    <h3>t3.xlarge</h3>
+    <div class="price">~$0.1664/hr → ~$120/month per node</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">4</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">16</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">50</div><div class="lbl">GB Disk</div></div>
+      <div class="spec"><div class="num">Burst</div><div class="lbl">CPU Type</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why t3.xlarge for staging:</strong> Staging should mirror production load. 16 GB RAM handles 50-80 concurrent WebSocket sessions per node. More disk for accumulated audio temp files during load testing. Still burstable — staging doesn't run 100% CPU 24/7.
+    </div>
+  </div>
+
+  <!-- PRODUCTION -->
+  <div class="env-label">🔴 Production Environment</div>
+
+  <div class="rec-box production" data-label="★ Recommended for Prod">
+    <h3>m5.xlarge (or m6i.xlarge)</h3>
+    <div class="price">~$0.192/hr → ~$138/month per node (m5) | m6i slightly newer & efficient</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">4</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">16</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">50</div><div class="lbl">GB Disk</div></div>
+      <div class="spec"><div class="num">Fixed</div><div class="lbl">CPU Type</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why m5.xlarge (not t3) for production:</strong> The "m" family provides <strong>consistent, non-burstable CPU</strong> — critical for production. With 100+ concurrent interviews, FFmpeg processing happens constantly (not in bursts). T3 burstable instances would exhaust CPU credits under sustained load and throttle to baseline, causing audio processing delays. The m5/m6i gives you guaranteed 4 vCPU + 16 GB at all times. The 1:4 CPU-to-memory ratio is perfect for your WebSocket + audio workload.
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>Prod EKS Cluster Config</span><span class="lang">Terraform</span></div>
+    <div class="code-body"><span class="comment"># Production environment — performance + reliability</span>
+<span class="keyword">cluster_name</span>     = <span class="string">"imentora-prod-eks"</span>
+<span class="keyword">kubernetes_version</span> = <span class="string">"1.30"</span>
+
+<span class="comment"># Node Group</span>
+<span class="keyword">node_instance_type</span> = <span class="string">"m5.xlarge"</span>     <span class="comment"># 4 vCPU, 16 GB RAM, consistent perf</span>
+<span class="keyword">node_disk_size</span>     = <span class="val">50</span>              <span class="comment"># GB - audio temp files + container images</span>
+<span class="keyword">node_min_size</span>      = <span class="val">3</span>               <span class="comment"># Always 3 nodes running</span>
+<span class="keyword">node_max_size</span>      = <span class="val">6</span>               <span class="comment"># Scale for peak hours</span>
+<span class="keyword">node_desired_size</span>  = <span class="val">3</span>               <span class="comment"># Normal state</span>
+
+<span class="comment"># Why these numbers:</span>
+<span class="comment"># - 3 nodes × 16 GB = 48 GB total (allocatable ~39 GB)</span>
+<span class="comment"># - 100 WebSocket sessions × 5 MB = ~500 MB</span>
+<span class="comment"># - 3 app replicas × 1.5 GB = ~4.5 GB</span>
+<span class="comment"># - Monitoring stack: ~4 GB</span>
+<span class="comment"># - ArgoCD + Ingress: ~3 GB</span>
+<span class="comment"># - In-memory cache (mock test): ~2 GB</span>
+<span class="comment"># - Audio processing buffer: ~4 GB</span>
+<span class="comment"># - Remaining headroom: ~21 GB for spikes</span></div>
+  </div>
+
+  <div class="env-label">Why NOT These Instance Types</div>
+  <table class="cmp-table">
+    <thead><tr><th>Instance</th><th>Specs</th><th>Why Not</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag red">t3.medium</span></td><td>2 vCPU, 4 GB</td><td>4 GB too tight — WebSocket sessions + audio buffers + caching will OOM</td></tr>
+      <tr><td><span class="tag yellow">c5.xlarge</span></td><td>4 vCPU, 8 GB</td><td>Compute-optimized but only 8 GB RAM — your workload is memory-heavy, not CPU-heavy</td></tr>
+      <tr><td><span class="tag yellow">r5.large</span></td><td>2 vCPU, 16 GB</td><td>Memory-optimized but only 2 vCPU — FFmpeg needs more CPU cores for concurrent processing</td></tr>
+      <tr><td><span class="tag red">m5.2xlarge</span></td><td>8 vCPU, 32 GB</td><td>Overkill for dev/staging — adds cost without proportional benefit at current scale</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============== RDS ============== -->
+<div class="panel container" id="rds">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(239,68,68,0.15); color: var(--accent5);">🗄️</div>
+    <div>
+      <h2>RDS MySQL Configuration</h2>
+      <p>For student data (tbl_Student) — currently on MySQL/SQL Server at 192.168.48.199</p>
+    </div>
+  </div>
+
+  <div class="rec-box">
+    <h3>Your MySQL Workload Profile</h3>
+    <table class="cmp-table">
+      <thead><tr><th>Characteristic</th><th>Analysis</th></tr></thead>
+      <tbody>
+        <tr><td>Database</td><td>SuperDB — student information table</td></tr>
+        <tr><td>Query Pattern</td><td><span class="tag green">Read-Heavy</span> — mostly SELECT for student info at session start</td></tr>
+        <tr><td>Write Pattern</td><td><span class="tag green">Light</span> — occasional student record updates</td></tr>
+        <tr><td>Concurrent Connections</td><td>~50-150 (one per active test session)</td></tr>
+        <tr><td>Data Size</td><td><span class="tag green">Small</span> — student records are lightweight text data</td></tr>
+        <tr><td>Query Complexity</td><td><span class="tag green">Simple</span> — single table lookups by ID</td></tr>
+        <tr><td>Availability Need</td><td><span class="tag yellow">Medium</span> — system works with dummy data fallback</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="env-label">🟢 Dev Environment</div>
+  <div class="rec-box recommended" data-label="✓ Recommended">
+    <h3>db.t3.micro</h3>
+    <div class="price">~$0.017/hr → ~$12.50/month</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">1</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">20</div><div class="lbl">GB gp3</div></div>
+      <div class="spec"><div class="num">No</div><div class="lbl">Multi-AZ</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why db.t3.micro:</strong> Your MySQL usage is extremely light — just student lookups by ID. The SuperDB table with student records fits entirely in ~1 GB. For dev with 10-20 concurrent users, this is more than sufficient. The dummy data fallback (USE_DUMMY_DATA=true) means dev doesn't even need the DB running.
+    </div>
+  </div>
+
+  <div class="env-label">🔴 Production Environment</div>
+  <div class="rec-box production" data-label="★ Recommended">
+    <h3>db.t3.medium</h3>
+    <div class="price">~$0.068/hr → ~$49/month (Single-AZ) | ~$98/month (Multi-AZ)</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">4</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">20</div><div class="lbl">GB gp3</div></div>
+      <div class="spec"><div class="num">Yes</div><div class="lbl">Multi-AZ</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why db.t3.medium:</strong> 4 GB RAM caches the entire student table in the buffer pool — all queries served from memory. 150 concurrent connections are well within limits. Multi-AZ for production reliability. Burstable is fine here because your query pattern is simple SELECT statements, not complex analytical queries. <strong>No need for db.m5/r5</strong> — that would be massive overkill for this workload.
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>RDS Terraform Config</span><span class="lang">HCL</span></div>
+    <div class="code-body"><span class="comment"># Production RDS MySQL</span>
+<span class="keyword">engine</span>              = <span class="string">"mysql"</span>
+<span class="keyword">engine_version</span>      = <span class="string">"8.0"</span>
+<span class="keyword">instance_class</span>      = <span class="string">"db.t3.medium"</span>   <span class="comment"># 2 vCPU, 4 GB RAM</span>
+<span class="keyword">allocated_storage</span>   = <span class="val">20</span>               <span class="comment"># GB gp3</span>
+<span class="keyword">max_allocated_storage</span> = <span class="val">50</span>             <span class="comment"># Auto-scale if needed</span>
+<span class="keyword">multi_az</span>            = <span class="val">true</span>             <span class="comment"># Production HA</span>
+<span class="keyword">storage_encrypted</span>   = <span class="val">true</span>
+<span class="keyword">deletion_protection</span> = <span class="val">true</span>
+<span class="keyword">backup_retention</span>    = <span class="val">7</span>               <span class="comment"># days</span>
+<span class="keyword">skip_final_snapshot</span> = <span class="val">false</span></div>
+  </div>
+</div>
+
+<!-- ============== DOCUMENTDB ============== -->
+<div class="panel container" id="docdb">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(16,185,129,0.15); color: var(--accent4);">📄</div>
+    <div>
+      <h2>DocumentDB (MongoDB) Configuration</h2>
+      <p>For ml_notes database — summaries, interview results, session data</p>
+    </div>
+  </div>
+
+  <div class="rec-box">
+    <h3>Your MongoDB Workload Profile</h3>
+    <table class="cmp-table">
+      <thead><tr><th>Characteristic</th><th>Analysis</th></tr></thead>
+      <tbody>
+        <tr><td>Database</td><td>ml_notes — summaries collection + results collections</td></tr>
+        <tr><td>Read Pattern</td><td><span class="tag red">Heavy</span> — every session fetches 7-10 recent summaries</td></tr>
+        <tr><td>Write Pattern</td><td><span class="tag yellow">Moderate</span> — full session logs, conversation history, evaluations</td></tr>
+        <tr><td>Document Size</td><td><span class="tag yellow">Medium-Large</span> — interview logs with 20+ conversation entries can be 50-100 KB</td></tr>
+        <tr><td>Concurrent Connections</td><td>~100-200 (reads + writes from all 3 modules)</td></tr>
+        <tr><td>Query Complexity</td><td><span class="tag yellow">Medium</span> — timestamp sorts, aggregations for analytics</td></tr>
+        <tr><td>Data Growth</td><td><span class="tag yellow">Steady</span> — each session creates 1-5 documents</td></tr>
+        <tr><td>Availability Need</td><td><span class="tag red">High</span> — all 3 modules depend on MongoDB</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-note">
+    <strong>⚠️ Important:</strong> DocumentDB is not 100% MongoDB-compatible. Your existing PyMongo queries should work, but some features like <code>$lookup</code> with certain pipeline stages, change streams, and some aggregation operators may behave differently. Test thoroughly during migration.
+  </div>
+
+  <div class="env-label">🟢 Dev Environment</div>
+  <div class="rec-box recommended" data-label="✓ Recommended">
+    <h3>db.t3.medium</h3>
+    <div class="price">~$0.076/hr → ~$56/month</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">4</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">1</div><div class="lbl">Instance</div></div>
+      <div class="spec"><div class="num">No</div><div class="lbl">Replica</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why db.t3.medium:</strong> MongoDB is the core database for all 3 modules — it needs more resources than MySQL. 4 GB RAM allows the working set (recent summaries + active session data) to stay in memory. Single instance is fine for dev. DocumentDB minimum is db.t3.medium (no micro available).
+    </div>
+  </div>
+
+  <div class="env-label">🔴 Production Environment</div>
+  <div class="rec-box production" data-label="★ Recommended">
+    <h3>db.r5.large (1 primary + 1 replica)</h3>
+    <div class="price">~$0.277/hr → ~$200/month per instance → ~$400/month total</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">16</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">2</div><div class="lbl">Instances</div></div>
+      <div class="spec"><div class="num">Yes</div><div class="lbl">Replica</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why db.r5.large for production:</strong> MongoDB (DocumentDB) performance depends heavily on RAM — the working set must fit in memory. With 100+ concurrent sessions each reading 7-10 summaries, plus writing conversation logs, the working set can reach 5-8 GB during peak. The r5.large with 16 GB ensures everything stays in memory. The read replica handles read-heavy summary fetches while the primary handles writes. This is the <strong>sweet spot</strong> — going smaller risks disk reads (massive latency), going larger is unnecessary at your scale.
+    </div>
+  </div>
+
+  <div class="rec-box alternative" data-label="Budget Alternative">
+    <h3>db.t3.medium (1 primary + 1 replica)</h3>
+    <div class="price">~$0.076/hr → ~$56/month per instance → ~$112/month total</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">4</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">2</div><div class="lbl">Instances</div></div>
+      <div class="spec"><div class="num">Yes</div><div class="lbl">Replica</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Budget option:</strong> If you're starting with fewer users (under 50 concurrent), db.t3.medium works. You can upgrade to r5.large later when load increases. Monitor the <code>BufferCacheHitRatio</code> metric — if it drops below 95%, upgrade immediately.
+    </div>
+  </div>
+</div>
+
+<!-- ============== ELASTICACHE ============== -->
+<div class="panel container" id="cache">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(236,72,153,0.15); color: var(--accent6);">⚡</div>
+    <div>
+      <h2>ElastiCache (Redis) Configuration</h2>
+      <p>Replacing in-memory Python caching with distributed Redis</p>
+    </div>
+  </div>
+
+  <div class="rec-box">
+    <h3>Why Move from In-Memory to Redis?</h3>
+    <table class="cmp-table">
+      <thead><tr><th>Current (In-Memory)</th><th>Problem</th><th>Redis Solution</th></tr></thead>
+      <tbody>
+        <tr><td>Python dict caching</td><td>Lost on pod restart/scaling</td><td>Persistent across pod lifecycle</td></tr>
+        <tr><td>Per-process cache</td><td>Each Uvicorn worker has own cache</td><td>Shared cache across all workers/pods</td></tr>
+        <tr><td>No TTL management</td><td>Manual expiry checks</td><td>Built-in TTL with auto-eviction</td></tr>
+        <tr><td>No HA</td><td>Cache lost = cold start</td><td>Replicated, survives failures</td></tr>
+        <tr><td>Memory unbounded</td><td>Can OOM the app pod</td><td>Dedicated memory pool</td></tr>
+      </tbody>
+    </table>
+    <div class="why-box">
+      <strong>Critical for K8s:</strong> When running on EKS, pods scale up/down and restart. Your current <code>MemoryManager</code> dict-based cache dies with the pod. Redis persists the 6-hour question cache, session state, and rate limiting data across all pods and restarts.
+    </div>
+  </div>
+
+  <div class="env-label">🟢 Dev Environment</div>
+  <div class="rec-box recommended" data-label="✓ Recommended">
+    <h3>cache.t3.micro</h3>
+    <div class="price">~$0.017/hr → ~$12.50/month</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">0.5</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">1</div><div class="lbl">Node</div></div>
+      <div class="spec"><div class="num">No</div><div class="lbl">Replica</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why cache.t3.micro:</strong> Dev question cache + session data fits easily in 500 MB. At 10-20 concurrent users, Redis handles thousands of ops/sec on this tier. Single node is fine for dev.
+    </div>
+  </div>
+
+  <div class="env-label">🔴 Production Environment</div>
+  <div class="rec-box production" data-label="★ Recommended">
+    <h3>cache.t3.small (1 primary + 1 replica)</h3>
+    <div class="price">~$0.034/hr → ~$25/month per node → ~$50/month total</div>
+    <div class="spec-grid">
+      <div class="spec"><div class="num">2</div><div class="lbl">vCPUs</div></div>
+      <div class="spec"><div class="num">1.37</div><div class="lbl">GB RAM</div></div>
+      <div class="spec"><div class="num">2</div><div class="lbl">Nodes</div></div>
+      <div class="spec"><div class="num">Yes</div><div class="lbl">Failover</div></div>
+    </div>
+    <div class="why-box">
+      <strong>Why cache.t3.small:</strong> Your caching needs are well-defined — question cache (6-hour TTL, ~10 KB per question set × ~20 user-type combos = ~200 KB), session state (~5 KB × 150 sessions = ~750 KB), rate limiting keys (~1 KB × 1000 = ~1 MB). Total working set: <strong>under 50 MB</strong>. The 1.37 GB is 20x more than needed — giving massive headroom for growth. No need for cache.r5/r6 at this scale.
+    </div>
+  </div>
+
+  <div class="env-label">What to Store in Redis</div>
+  <div class="analysis-grid">
+    <div class="a-card" style="border-left-color: var(--accent);">
+      <h4>📦 Question Cache</h4>
+      <div class="detail">Key: questions:{user_type}:{content_hash}</div>
+      <div class="detail">TTL: 6 hours (21600 seconds)</div>
+      <div class="detail">Value: JSON array of 10 questions</div>
+      <div class="detail">Replaces: MemoryManager.question_cache</div>
+    </div>
+    <div class="a-card" style="border-left-color: var(--accent2);">
+      <h4>🔄 Session State</h4>
+      <div class="detail">Key: session:{session_id}</div>
+      <div class="detail">TTL: 2 hours (session timeout)</div>
+      <div class="detail">Value: Current question index, answers</div>
+      <div class="detail">Replaces: in-memory test state dicts</div>
+    </div>
+    <div class="a-card" style="border-left-color: var(--accent5);">
+      <h4>🛡️ Rate Limiting</h4>
+      <div class="detail">Key: ratelimit:{user_ip}</div>
+      <div class="detail">TTL: 60 seconds (sliding window)</div>
+      <div class="detail">Value: Request count</div>
+      <div class="detail">100 req/min per IP</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== COST ESTIMATE ============== -->
+<div class="panel container" id="cost">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(245,158,11,0.15); color: var(--accent3);">💰</div>
+    <div>
+      <h2>Monthly Cost Estimate (ap-south-1)</h2>
+      <p>All prices are approximate, based on on-demand pricing in Mumbai region</p>
+    </div>
+  </div>
+
+  <!-- DEV COSTS -->
+  <div class="cost-card">
+    <h3>🟢 Development Environment</h3>
+    <div class="cost-row"><span class="svc">EKS Cluster (control plane)</span><span class="amt">$73</span></div>
+    <div class="cost-row"><span class="svc">EKS Nodes (2× t3.large)</span><span class="amt">$120</span></div>
+    <div class="cost-row"><span class="svc">RDS MySQL (db.t3.micro, Single-AZ)</span><span class="amt">$13</span></div>
+    <div class="cost-row"><span class="svc">DocumentDB (db.t3.medium, 1 instance)</span><span class="amt">$56</span></div>
+    <div class="cost-row"><span class="svc">ElastiCache Redis (cache.t3.micro)</span><span class="amt">$13</span></div>
+    <div class="cost-row"><span class="svc">ECR (image storage ~5 GB)</span><span class="amt">$1</span></div>
+    <div class="cost-row"><span class="svc">NAT Gateway (single)</span><span class="amt">$35</span></div>
+    <div class="cost-row"><span class="svc">ALB (Application Load Balancer)</span><span class="amt">$22</span></div>
+    <div class="cost-row"><span class="svc">CloudWatch Logs</span><span class="amt">$5</span></div>
+    <div class="cost-row"><span class="svc">S3 (Terraform state + backups)</span><span class="amt">$1</span></div>
+    <div class="cost-total"><span>Dev Total (estimated)</span><span class="amt">~$339/month</span></div>
+  </div>
+
+  <!-- PROD COSTS -->
+  <div class="cost-card" style="border-color: rgba(139,92,246,0.3);">
+    <h3>🔴 Production Environment</h3>
+    <div class="cost-row"><span class="svc">EKS Cluster (control plane)</span><span class="amt">$73</span></div>
+    <div class="cost-row"><span class="svc">EKS Nodes (3× m5.xlarge)</span><span class="amt">$414</span></div>
+    <div class="cost-row"><span class="svc">RDS MySQL (db.t3.medium, Multi-AZ)</span><span class="amt">$98</span></div>
+    <div class="cost-row"><span class="svc">DocumentDB (db.r5.large, 1+1 replica)</span><span class="amt">$400</span></div>
+    <div class="cost-row"><span class="svc">ElastiCache Redis (cache.t3.small, 1+1)</span><span class="amt">$50</span></div>
+    <div class="cost-row"><span class="svc">ECR (image storage ~10 GB)</span><span class="amt">$1</span></div>
+    <div class="cost-row"><span class="svc">NAT Gateway (HA, 2 AZs)</span><span class="amt">$70</span></div>
+    <div class="cost-row"><span class="svc">ALB + WAF</span><span class="amt">$40</span></div>
+    <div class="cost-row"><span class="svc">CloudWatch + GuardDuty</span><span class="amt">$20</span></div>
+    <div class="cost-row"><span class="svc">ACM + Route53</span><span class="amt">$2</span></div>
+    <div class="cost-row"><span class="svc">KMS + Secrets Manager</span><span class="amt">$5</span></div>
+    <div class="cost-total"><span>Prod Total (estimated)</span><span class="amt">~$1,173/month</span></div>
+  </div>
+
+  <div class="info-note">
+    <strong>💡 Cost Optimization Tips:</strong> Use Reserved Instances (1-year) to save 30-40% on EKS nodes and databases. Use Spot Instances for dev/staging EKS nodes to save 60-70%. Start with the dev environment and scale up as usage grows. The single biggest cost is EKS nodes + DocumentDB — optimize these first.
+  </div>
+
+  <!-- BUDGET DEV -->
+  <div class="cost-card" style="border-color: rgba(16,185,129,0.3);">
+    <h3>🟢 Budget Dev (with Spot Instances)</h3>
+    <div class="cost-row"><span class="svc">EKS Cluster</span><span class="amt">$73</span></div>
+    <div class="cost-row"><span class="svc">EKS Nodes (2× t3.large SPOT ~70% off)</span><span class="amt">$36</span></div>
+    <div class="cost-row"><span class="svc">RDS + DocumentDB + ElastiCache</span><span class="amt">$82</span></div>
+    <div class="cost-row"><span class="svc">NAT + ALB + Misc</span><span class="amt">$63</span></div>
+    <div class="cost-total"><span>Budget Dev Total</span><span class="amt">~$254/month</span></div>
+  </div>
+</div>
+
+<!-- ============== TERRAFORM TFVARS ============== -->
+<div class="panel container" id="tfvars">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(16,185,129,0.15); color: var(--accent4);">📝</div>
+    <div>
+      <h2>Ready-to-Use terraform.tfvars</h2>
+      <p>Copy these values once you confirm the recommendations</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>environments/dev/terraform.tfvars</span><span class="lang">HCL</span></div>
+    <div class="code-body"><span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># iMentora Dev Environment — terraform.tfvars</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+
+<span class="comment"># General</span>
+<span class="keyword">project</span>     = <span class="string">"imentora"</span>
+<span class="keyword">environment</span> = <span class="string">"dev"</span>
+<span class="keyword">region</span>      = <span class="string">"ap-south-1"</span>
+
+<span class="comment"># VPC</span>
+<span class="keyword">vpc_cidr</span>            = <span class="string">"10.0.0.0/16"</span>
+<span class="keyword">public_subnet_cidrs</span> = [<span class="string">"10.0.1.0/24"</span>, <span class="string">"10.0.2.0/24"</span>]
+<span class="keyword">private_subnet_cidrs</span>= [<span class="string">"10.0.10.0/24"</span>, <span class="string">"10.0.20.0/24"</span>]
+<span class="keyword">availability_zones</span> = [<span class="string">"ap-south-1a"</span>, <span class="string">"ap-south-1b"</span>]
+<span class="keyword">single_nat_gateway</span> = <span class="val">true</span>      <span class="comment"># Cost saving for dev</span>
+
+<span class="comment"># EKS</span>
+<span class="keyword">cluster_name</span>       = <span class="string">"imentora-dev-eks"</span>
+<span class="keyword">kubernetes_version</span> = <span class="string">"1.30"</span>
+<span class="keyword">node_instance_type</span> = <span class="string">"t3.large"</span>
+<span class="keyword">node_disk_size</span>     = <span class="val">30</span>
+<span class="keyword">node_min_size</span>      = <span class="val">2</span>
+<span class="keyword">node_max_size</span>      = <span class="val">4</span>
+<span class="keyword">node_desired_size</span>  = <span class="val">2</span>
+
+<span class="comment"># ECR</span>
+<span class="keyword">ecr_repo_name</span>      = <span class="string">"imentora-dev-app"</span>
+<span class="keyword">image_tag_mutability</span> = <span class="string">"MUTABLE"</span>   <span class="comment"># Dev allows tag overwrite</span>
+<span class="keyword">scan_on_push</span>       = <span class="val">true</span>
+
+<span class="comment"># RDS (MySQL)</span>
+<span class="keyword">rds_engine</span>         = <span class="string">"mysql"</span>
+<span class="keyword">rds_engine_version</span> = <span class="string">"8.0"</span>
+<span class="keyword">rds_instance_class</span> = <span class="string">"db.t3.micro"</span>
+<span class="keyword">rds_storage</span>        = <span class="val">20</span>
+<span class="keyword">rds_max_storage</span>    = <span class="val">50</span>
+<span class="keyword">rds_multi_az</span>       = <span class="val">false</span>
+<span class="keyword">rds_db_name</span>        = <span class="string">"SuperDB"</span>
+
+<span class="comment"># DocumentDB (MongoDB replacement)</span>
+<span class="keyword">docdb_instance_class</span> = <span class="string">"db.t3.medium"</span>
+<span class="keyword">docdb_instance_count</span> = <span class="val">1</span>
+<span class="keyword">docdb_db_name</span>       = <span class="string">"ml_notes"</span>
+
+<span class="comment"># ElastiCache (Redis)</span>
+<span class="keyword">redis_node_type</span>    = <span class="string">"cache.t3.micro"</span>
+<span class="keyword">redis_num_cache_nodes</span> = <span class="val">1</span>
+<span class="keyword">redis_engine_version</span> = <span class="string">"7.0"</span>
+
+<span class="comment"># Tags</span>
+<span class="keyword">tags</span> = {
+  Project     = <span class="string">"iMentora"</span>
+  Environment = <span class="string">"dev"</span>
+  ManagedBy   = <span class="string">"terraform"</span>
+  Team        = <span class="string">"lancier-tech"</span>
+}</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>environments/prod/terraform.tfvars</span><span class="lang">HCL</span></div>
+    <div class="code-body"><span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># iMentora Prod Environment — terraform.tfvars</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+
+<span class="comment"># General</span>
+<span class="keyword">project</span>     = <span class="string">"imentora"</span>
+<span class="keyword">environment</span> = <span class="string">"prod"</span>
+<span class="keyword">region</span>      = <span class="string">"ap-south-1"</span>
+
+<span class="comment"># VPC</span>
+<span class="keyword">vpc_cidr</span>            = <span class="string">"10.1.0.0/16"</span>   <span class="comment"># Different CIDR from dev</span>
+<span class="keyword">public_subnet_cidrs</span> = [<span class="string">"10.1.1.0/24"</span>, <span class="string">"10.1.2.0/24"</span>]
+<span class="keyword">private_subnet_cidrs</span>= [<span class="string">"10.1.10.0/24"</span>, <span class="string">"10.1.20.0/24"</span>]
+<span class="keyword">availability_zones</span> = [<span class="string">"ap-south-1a"</span>, <span class="string">"ap-south-1b"</span>]
+<span class="keyword">single_nat_gateway</span> = <span class="val">false</span>     <span class="comment"># HA NAT for prod</span>
+
+<span class="comment"># EKS</span>
+<span class="keyword">cluster_name</span>       = <span class="string">"imentora-prod-eks"</span>
+<span class="keyword">kubernetes_version</span> = <span class="string">"1.30"</span>
+<span class="keyword">node_instance_type</span> = <span class="string">"m5.xlarge"</span>   <span class="comment"># Consistent CPU for audio processing</span>
+<span class="keyword">node_disk_size</span>     = <span class="val">50</span>
+<span class="keyword">node_min_size</span>      = <span class="val">3</span>
+<span class="keyword">node_max_size</span>      = <span class="val">6</span>
+<span class="keyword">node_desired_size</span>  = <span class="val">3</span>
+
+<span class="comment"># ECR</span>
+<span class="keyword">ecr_repo_name</span>      = <span class="string">"imentora-prod-app"</span>
+<span class="keyword">image_tag_mutability</span> = <span class="string">"IMMUTABLE"</span>  <span class="comment"># Prod: no tag overwrite</span>
+<span class="keyword">scan_on_push</span>       = <span class="val">true</span>
+
+<span class="comment"># RDS (MySQL)</span>
+<span class="keyword">rds_engine</span>         = <span class="string">"mysql"</span>
+<span class="keyword">rds_engine_version</span> = <span class="string">"8.0"</span>
+<span class="keyword">rds_instance_class</span> = <span class="string">"db.t3.medium"</span>
+<span class="keyword">rds_storage</span>        = <span class="val">20</span>
+<span class="keyword">rds_max_storage</span>    = <span class="val">50</span>
+<span class="keyword">rds_multi_az</span>       = <span class="val">true</span>        <span class="comment"># HA for production</span>
+<span class="keyword">rds_db_name</span>        = <span class="string">"SuperDB"</span>
+
+<span class="comment"># DocumentDB (MongoDB replacement)</span>
+<span class="keyword">docdb_instance_class</span> = <span class="string">"db.r5.large"</span>  <span class="comment"># 16 GB RAM for working set</span>
+<span class="keyword">docdb_instance_count</span> = <span class="val">2</span>            <span class="comment"># 1 primary + 1 replica</span>
+<span class="keyword">docdb_db_name</span>       = <span class="string">"ml_notes"</span>
+
+<span class="comment"># ElastiCache (Redis)</span>
+<span class="keyword">redis_node_type</span>    = <span class="string">"cache.t3.small"</span>
+<span class="keyword">redis_num_cache_nodes</span> = <span class="val">2</span>        <span class="comment"># 1 primary + 1 replica</span>
+<span class="keyword">redis_engine_version</span> = <span class="string">"7.0"</span>
+
+<span class="comment"># Tags</span>
+<span class="keyword">tags</span> = {
+  Project     = <span class="string">"iMentora"</span>
+  Environment = <span class="string">"prod"</span>
+  ManagedBy   = <span class="string">"terraform"</span>
+  Team        = <span class="string">"lancier-tech"</span>
+}</div>
+  </div>
+
+  <div class="info-note">
+    <strong>📌 Remaining decisions needed from you:</strong> (1) Which environments to create first — dev only, or dev + prod? (2) Terraform state backend — S3 bucket name and DynamoDB lock table name. (3) GitHub-to-AWS auth method — OIDC (recommended) or IAM keys? (4) Application container port — looks like <strong>8030</strong> from your docs. (5) Subdomains for ArgoCD, Grafana, and the app itself.
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.t).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

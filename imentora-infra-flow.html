@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMentora - DevSecOps Infrastructure Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --border: #1e293b;
+    --accent: #06b6d4;
+    --accent2: #8b5cf6;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --accent5: #ef4444;
+    --accent6: #ec4899;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-bright: #f8fafc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .hero {
+    position: relative;
+    padding: 60px 40px 40px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+    animation: bgShift 20s ease-in-out infinite;
+  }
+
+  @keyframes bgShift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-5%, 5%); }
+  }
+
+  .hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    letter-spacing: -1px;
+  }
+
+  .hero .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    position: relative;
+    font-weight: 300;
+  }
+
+  .hero .badge {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    color: var(--accent);
+    position: relative;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Navigation Tabs */
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 20px 20px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    padding-top: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .nav-tab:hover { border-color: var(--accent); color: var(--text); }
+  .nav-tab.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(139, 92, 246, 0.15));
+    border-color: var(--accent);
+    color: var(--text-bright);
+  }
+
+  /* Section containers */
+  .section { display: none; padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
+  .section.active { display: block; animation: fadeIn 0.4s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 30px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .section-header p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* Info Required Cards */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .info-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .info-card .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-card .card-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    font-size: 0.82rem;
+  }
+
+  .info-item:last-child { border-bottom: none; }
+
+  .info-item .label {
+    color: var(--text-dim);
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+
+  .info-item .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    text-align: right;
+    word-break: break-all;
+  }
+
+  .info-item .value.pending {
+    color: var(--accent3);
+    font-style: italic;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  /* Flow diagram */
+  .flow-container {
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .flow-step {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    margin-bottom: 8px;
+    padding-left: 30px;
+  }
+
+  .flow-step::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 28px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .flow-step:last-child::before { display: none; }
+
+  .flow-dot {
+    position: absolute;
+    left: 4px;
+    top: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: var(--bg);
+    z-index: 1;
+  }
+
+  .flow-content {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .flow-content:hover {
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+
+  .flow-content h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+
+  .flow-content p {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .flow-content .cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    background: rgba(6, 182, 212, 0.08);
+    border: 1px solid rgba(6, 182, 212, 0.15);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    color: var(--accent);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(30, 41, 59, 0.5);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .code-header .lang {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(6, 182, 212, 0.1);
+    color: var(--accent);
+  }
+
+  .code-body {
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: #e6edf3;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-body .comment { color: #6b7b8d; }
+  .code-body .keyword { color: #ff7b72; }
+  .code-body .string { color: #a5d6ff; }
+  .code-body .func { color: #d2a8ff; }
+  .code-body .var { color: #79c0ff; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .arch-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+
+  .arch-box {
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 120px;
+    border: 1px solid;
+    transition: transform 0.2s ease;
+  }
+
+  .arch-box:hover { transform: scale(1.05); }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    margin: 4px 0;
+  }
+
+  .arch-label {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin: 20px 0 8px;
+  }
+
+  /* Security badges */
+  .security-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+  }
+
+  .sec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    border: 1px solid;
+  }
+
+  /* Module cards */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+
+  .module-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    border-left: 3px solid;
+    transition: all 0.3s ease;
+  }
+
+  .module-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .module-card h5 {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .module-card .detail {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    padding-left: 12px;
+    position: relative;
+  }
+
+  .module-card .detail::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: inherit;
+    opacity: 0.5;
+  }
+
+  /* Stages list */
+  .stage-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .stage-item:hover { border-color: rgba(6, 182, 212, 0.3); }
+
+  .stage-item.expanded .stage-details { display: block; }
+  .stage-item .stage-details { display: none; }
+
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .stage-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .stage-header h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    flex: 1;
+  }
+
+  .stage-header .expand-icon {
+    color: var(--text-dim);
+    transition: transform 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .stage-item.expanded .expand-icon { transform: rotate(180deg); }
+
+  .stage-details {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stage-details p {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  /* Status indicator */
+  .status-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-tag.required { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .status-tag.known { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+  .status-tag.optional { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+  /* Summary table */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+
+  .summary-table th, .summary-table td {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: var(--surface2);
+  }
+
+  .summary-table td { color: var(--text); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2rem; }
+    .nav-tabs { gap: 4px; padding: 8px 12px 12px; }
+    .nav-tab { padding: 8px 12px; font-size: 0.72rem; }
+    .section { padding: 20px 12px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .module-grid { grid-template-columns: 1fr; }
+    .arch-diagram { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>iMentora Infrastructure</h1>
+  <p class="subtitle">DevSecOps End-to-End Deployment Architecture</p>
+  <span class="badge">Terraform → GitHub Actions → EKS → ArgoCD → Monitoring</span>
+</div>
+
+<div class="nav-tabs" id="navTabs">
+  <button class="nav-tab active" data-tab="info">📋 Info Required</button>
+  <button class="nav-tab" data-tab="step1">🏗️ Step 1: Terraform</button>
+  <button class="nav-tab" data-tab="step2">⚙️ Step 2: CI/CD</button>
+  <button class="nav-tab" data-tab="step3">🐳 Step 3: Docker + ECR</button>
+  <button class="nav-tab" data-tab="step4">☸️ Step 4: EKS + ArgoCD</button>
+  <button class="nav-tab" data-tab="step5">📊 Step 5: Monitoring</button>
+  <button class="nav-tab" data-tab="step6">🔒 Step 6: Security</button>
+  <button class="nav-tab" data-tab="arch">🗺️ Full Architecture</button>
+</div>
+
+<!-- ============ INFO REQUIRED SECTION ============ -->
+<div class="section active" id="info">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent);">📋</div>
+    <div>
+      <h2>Information Required to Build Infrastructure</h2>
+      <p>Provide these details before infrastructure creation begins</p>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <!-- AWS Account Info -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent4);"></span> AWS Account Configuration <span class="status-tag known">Known</span></div>
+      <div class="info-item"><span class="label">AWS Account ID</span><span class="value">664418964913</span></div>
+      <div class="info-item"><span class="label">Primary Region</span><span class="value">ap-south-1</span></div>
+      <div class="info-item"><span class="label">DR Region</span><span class="value pending">Needed if required</span></div>
+      <div class="info-item"><span class="label">Domain</span><span class="value">lancieretech.com</span></div>
+    </div>
+
+    <!-- GitHub / SCM -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent2);"></span> GitHub / SCM Details <span class="status-tag known">Known</span></div>
+      <div class="info-item"><span class="label">GitHub Org</span><span class="value">lancier-tech-org</span></div>
+      <div class="info-item"><span class="label">App Repo</span><span class="value">IMENTORA-app</span></div>
+      <div class="info-item"><span class="label">GitOps Repo</span><span class="value">IMENTORA-gitops</span></div>
+      <div class="info-item"><span class="label">Infra Repo</span><span class="value">IMENTORA-infra</span></div>
+    </div>
+
+    <!-- Networking -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent3);"></span> Network Configuration <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">VPC CIDR</span><span class="value pending">e.g., 10.0.0.0/16</span></div>
+      <div class="info-item"><span class="label">Public Subnets</span><span class="value pending">e.g., 2 AZs</span></div>
+      <div class="info-item"><span class="label">Private Subnets</span><span class="value pending">e.g., 2 AZs</span></div>
+      <div class="info-item"><span class="label">NAT Gateway</span><span class="value pending">Single or HA?</span></div>
+    </div>
+
+    <!-- EKS Configuration -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent6);"></span> EKS Cluster Config <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">Cluster Name</span><span class="value">imentora-dev-eks</span></div>
+      <div class="info-item"><span class="label">K8s Version</span><span class="value pending">e.g., 1.29 / 1.30</span></div>
+      <div class="info-item"><span class="label">Node Instance Type</span><span class="value pending">e.g., t3.medium</span></div>
+      <div class="info-item"><span class="label">Min/Max/Desired</span><span class="value pending">e.g., 2/5/3</span></div>
+      <div class="info-item"><span class="label">Node Disk Size</span><span class="value pending">e.g., 30GB</span></div>
+    </div>
+
+    <!-- Database -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent5);"></span> Database Configuration <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">RDS Engine</span><span class="value pending">MySQL version?</span></div>
+      <div class="info-item"><span class="label">RDS Instance Class</span><span class="value pending">e.g., db.t3.medium</span></div>
+      <div class="info-item"><span class="label">RDS Storage</span><span class="value pending">e.g., 20GB gp3</span></div>
+      <div class="info-item"><span class="label">DocumentDB Instance</span><span class="value pending">e.g., db.t3.medium</span></div>
+      <div class="info-item"><span class="label">ElastiCache Node</span><span class="value pending">e.g., cache.t3.micro</span></div>
+      <div class="info-item"><span class="label">Multi-AZ</span><span class="value pending">Yes / No?</span></div>
+    </div>
+
+    <!-- Application -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent);"></span> Application Details <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">Application Type</span><span class="value pending">Backend tech stack?</span></div>
+      <div class="info-item"><span class="label">Frontend Tech</span><span class="value pending">React / Angular?</span></div>
+      <div class="info-item"><span class="label">Container Port</span><span class="value pending">e.g., 3000, 8080</span></div>
+      <div class="info-item"><span class="label">Environments</span><span class="value pending">dev / staging / prod?</span></div>
+      <div class="info-item"><span class="label">Replicas per Env</span><span class="value pending">e.g., 2 dev, 3 prod</span></div>
+    </div>
+
+    <!-- Domain / SSL -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent4);"></span> Domain & SSL <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">Domain</span><span class="value">lancieretech.com</span></div>
+      <div class="info-item"><span class="label">App Subdomain</span><span class="value pending">e.g., app.lancieretech.com</span></div>
+      <div class="info-item"><span class="label">API Subdomain</span><span class="value pending">e.g., api.lancieretech.com</span></div>
+      <div class="info-item"><span class="label">ArgoCD Subdomain</span><span class="value pending">e.g., argocd.lancieretech.com</span></div>
+      <div class="info-item"><span class="label">Grafana Subdomain</span><span class="value pending">e.g., grafana.lancieretech.com</span></div>
+      <div class="info-item"><span class="label">DNS Provider</span><span class="value pending">Route53 / External?</span></div>
+    </div>
+
+    <!-- Security / Secrets -->
+    <div class="info-card">
+      <div class="card-title"><span class="dot" style="background: var(--accent5);"></span> Security & Secrets <span class="status-tag required">Required</span></div>
+      <div class="info-item"><span class="label">Terraform Backend</span><span class="value pending">S3 bucket name?</span></div>
+      <div class="info-item"><span class="label">DynamoDB Lock Table</span><span class="value pending">Table name?</span></div>
+      <div class="info-item"><span class="label">SonarQube</span><span class="value pending">Self-hosted or Cloud?</span></div>
+      <div class="info-item"><span class="label">GitHub PAT</span><span class="value pending">Available in Secrets?</span></div>
+      <div class="info-item"><span class="label">AWS Access Method</span><span class="value pending">OIDC / Access Keys?</span></div>
+    </div>
+  </div>
+
+  <div style="background: var(--surface); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 20px; margin-top: 10px;">
+    <div style="font-size: 0.9rem; font-weight: 600; color: var(--accent3); margin-bottom: 8px;">⚡ Quick Summary — What I Need From You</div>
+    <table class="summary-table">
+      <thead><tr><th>Category</th><th>What's Needed</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>AWS / Region</td><td>Account ID, Region, Domain</td><td><span class="status-tag known">✓ Known</span></td></tr>
+        <tr><td>GitHub Repos</td><td>Organization, repo names</td><td><span class="status-tag known">✓ Known</span></td></tr>
+        <tr><td>VPC / Network</td><td>CIDR block, subnet count, NAT config</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>EKS Cluster</td><td>K8s version, instance types, node scaling</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>Databases</td><td>RDS / DocDB / ElastiCache instance sizes</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>App Details</td><td>Tech stack, container port, environments</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>Domain / SSL</td><td>Subdomains, DNS provider</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>Terraform State</td><td>S3 bucket name, DynamoDB table</td><td><span class="status-tag required">Needed</span></td></tr>
+        <tr><td>Security / Auth</td><td>GitHub-AWS auth method (OIDC preferred)</td><td><span class="status-tag required">Needed</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ STEP 1: TERRAFORM ============ -->
+<div class="section" id="step1">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--accent2);">🏗️</div>
+    <div>
+      <h2>Step 1 — Secure Infrastructure with Terraform</h2>
+      <p>Modular IaC with built-in security at every layer</p>
+    </div>
+  </div>
+
+  <div class="arch-label">Repository Structure — IMENTORA-infra</div>
+  <div class="code-block">
+    <div class="code-header"><span>IMENTORA-infra/</span><span class="lang">Directory</span></div>
+    <div class="code-body">IMENTORA-infra/
+├── modules/
+│   ├── vpc/            <span class="comment"># Network isolation, NACLs, Flow Logs</span>
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── terraform.tfvars
+│   ├── eks/            <span class="comment"># Kubernetes cluster with IRSA</span>
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── terraform.tfvars
+│   ├── ecr/            <span class="comment"># Container registry with scanning</span>
+│   ├── rds/            <span class="comment"># MySQL with encryption at rest</span>
+│   ├── documentdb/     <span class="comment"># MongoDB-compatible with TLS</span>
+│   ├── elasticache/    <span class="comment"># Redis with auth token</span>
+│   └── sonarqube/      <span class="comment"># Code quality on EKS</span>
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf     <span class="comment"># Calls modules with dev values</span>
+│   │   ├── backend.tf  <span class="comment"># S3 + DynamoDB state locking</span>
+│   │   └── terraform.tfvars
+│   ├── staging/
+│   └── prod/
+├── security/
+│   ├── iam-policies/   <span class="comment"># Least-privilege IAM roles</span>
+│   ├── kms/            <span class="comment"># Encryption keys</span>
+│   └── waf/            <span class="comment"># Web Application Firewall rules</span>
+└── .github/
+    └── workflows/
+        └── terraform.yml <span class="comment"># Plan on PR, Apply on merge</span></div>
+  </div>
+
+  <div class="arch-label">Terraform Modules — Security Built-In</div>
+  <div class="module-grid">
+    <div class="module-card" style="border-left-color: var(--accent);">
+      <h5>🌐 VPC Module</h5>
+      <div class="detail">Private & Public subnets across 2+ AZs</div>
+      <div class="detail">NAT Gateway for private subnet outbound</div>
+      <div class="detail">VPC Flow Logs → CloudWatch / S3</div>
+      <div class="detail">Network ACLs restricting ingress/egress</div>
+      <div class="detail">No public IPs on private resources</div>
+      <div class="detail">VPC Endpoints for S3, ECR, STS (no internet)</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">🔒 Flow Logs</span>
+        <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">🔒 NACLs</span>
+        <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">🔒 VPC Endpoints</span>
+      </div>
+    </div>
+
+    <div class="module-card" style="border-left-color: var(--accent2);">
+      <h5>☸️ EKS Module</h5>
+      <div class="detail">Private API endpoint (no public access)</div>
+      <div class="detail">Managed node groups in private subnets</div>
+      <div class="detail">IRSA (IAM Roles for Service Accounts)</div>
+      <div class="detail">Envelope encryption with KMS for secrets</div>
+      <div class="detail">Control plane logging → CloudWatch</div>
+      <div class="detail">Pod Security Standards enforced</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(139,92,246,0.3); color: var(--accent2); background: rgba(139,92,246,0.08);">🔒 IRSA</span>
+        <span class="sec-badge" style="border-color: rgba(139,92,246,0.3); color: var(--accent2); background: rgba(139,92,246,0.08);">🔒 KMS Encrypt</span>
+        <span class="sec-badge" style="border-color: rgba(139,92,246,0.3); color: var(--accent2); background: rgba(139,92,246,0.08);">🔒 Private API</span>
+      </div>
+    </div>
+
+    <div class="module-card" style="border-left-color: var(--accent3);">
+      <h5>📦 ECR Module</h5>
+      <div class="detail">Image scanning on push enabled</div>
+      <div class="detail">Lifecycle policies (keep last N images)</div>
+      <div class="detail">Cross-account access policies if needed</div>
+      <div class="detail">Encryption at rest with KMS</div>
+      <div class="detail">Immutable tags for production images</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(245,158,11,0.3); color: var(--accent3); background: rgba(245,158,11,0.08);">🔒 Scan on Push</span>
+        <span class="sec-badge" style="border-color: rgba(245,158,11,0.3); color: var(--accent3); background: rgba(245,158,11,0.08);">🔒 Immutable Tags</span>
+      </div>
+    </div>
+
+    <div class="module-card" style="border-left-color: var(--accent5);">
+      <h5>🗄️ RDS Module (MySQL)</h5>
+      <div class="detail">Multi-AZ for high availability</div>
+      <div class="detail">Encryption at rest (KMS)</div>
+      <div class="detail">Encryption in transit (SSL/TLS enforced)</div>
+      <div class="detail">Automated backups with retention policy</div>
+      <div class="detail">Private subnet only — no public access</div>
+      <div class="detail">Security Group: only EKS nodes can connect</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(239,68,68,0.3); color: var(--accent5); background: rgba(239,68,68,0.08);">🔒 KMS Encrypt</span>
+        <span class="sec-badge" style="border-color: rgba(239,68,68,0.3); color: var(--accent5); background: rgba(239,68,68,0.08);">🔒 TLS Enforced</span>
+      </div>
+    </div>
+
+    <div class="module-card" style="border-left-color: var(--accent4);">
+      <h5>📄 DocumentDB Module</h5>
+      <div class="detail">TLS-enforced connections</div>
+      <div class="detail">Encryption at rest with KMS</div>
+      <div class="detail">Cluster in private subnets only</div>
+      <div class="detail">Audit logging enabled</div>
+      <div class="detail">Automated snapshots</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">🔒 TLS</span>
+        <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">🔒 Audit Logs</span>
+      </div>
+    </div>
+
+    <div class="module-card" style="border-left-color: var(--accent6);">
+      <h5>⚡ ElastiCache Module</h5>
+      <div class="detail">Redis with AUTH token enabled</div>
+      <div class="detail">Encryption at rest & in transit</div>
+      <div class="detail">Private subnet deployment</div>
+      <div class="detail">Automatic failover if Multi-AZ</div>
+      <div class="security-badges">
+        <span class="sec-badge" style="border-color: rgba(236,72,153,0.3); color: var(--accent6); background: rgba(236,72,153,0.08);">🔒 AUTH Token</span>
+        <span class="sec-badge" style="border-color: rgba(236,72,153,0.3); color: var(--accent6); background: rgba(236,72,153,0.08);">🔒 Encrypted</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-label">Infrastructure Security Layers</div>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444;">AWS WAF</div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444;">AWS Shield</div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444;">CloudFront</div>
+    </div>
+    <div class="arch-arrow">↓ Layer 1: Edge Security ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #f59e0b;">ALB + ACM SSL</div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #f59e0b;">Security Groups</div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #f59e0b;">NACLs</div>
+    </div>
+    <div class="arch-arrow">↓ Layer 2: Network Security ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #06b6d4;">KMS Encryption</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #06b6d4;">Secrets Manager</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #06b6d4;">IRSA</div>
+    </div>
+    <div class="arch-arrow">↓ Layer 3: Identity & Encryption ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981;">Pod Security</div>
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981;">Network Policies</div>
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981;">OPA/Kyverno</div>
+    </div>
+    <div class="arch-arrow">↓ Layer 4: Kubernetes Security ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); color: #8b5cf6;">CloudTrail</div>
+      <div class="arch-box" style="background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); color: #8b5cf6;">GuardDuty</div>
+      <div class="arch-box" style="background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); color: #8b5cf6;">Config Rules</div>
+    </div>
+    <div style="text-align: center; margin-top: 8px; font-size: 0.75rem; color: var(--text-dim);">Layer 5: Audit & Compliance</div>
+  </div>
+
+  <div class="arch-label">Terraform CI/CD Pipeline (GitHub Actions)</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent);"></div>
+      <div class="flow-content">
+        <h4>PR Created → terraform plan</h4>
+        <p>On pull request to main, run <code>terraform fmt -check</code>, <code>terraform validate</code>, <code>tfsec</code> (security scanning), <code>checkov</code> (compliance checks), and <code>terraform plan</code>. Post plan output as PR comment.</p>
+        <div class="cmd">tfsec . --format json → checkov -d . → terraform plan -out=tfplan</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent4);"></div>
+      <div class="flow-content">
+        <h4>Manual Approval Gate</h4>
+        <p>Required approval from infrastructure lead before applying changes. GitHub Environment protection rules enforce this.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent2);"></div>
+      <div class="flow-content">
+        <h4>Merge to main → terraform apply</h4>
+        <p>After merge, automatically apply the approved plan. State stored in S3 with DynamoDB locking to prevent concurrent modifications.</p>
+        <div class="cmd">terraform apply -auto-approve tfplan</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 2: CI/CD ============ -->
+<div class="section" id="step2">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--accent4);">⚙️</div>
+    <div>
+      <h2>Step 2 — CI/CD Pipeline (GitHub Actions DevSecOps)</h2>
+      <p>End-to-end automated pipeline with security at every stage</p>
+    </div>
+  </div>
+
+  <div class="arch-label">Complete CI/CD Pipeline Flow</div>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: #c4b5fd;">Developer Push</div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">Gitleaks<br><small>Secret Scan</small></div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">SAST<br><small>SonarQube</small></div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">SCA<br><small>Trivy / OWASP</small></div>
+    </div>
+    <div class="arch-arrow">↓ Security Gate ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">Unit Tests</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">Build App</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">Lint / Format</div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d;">Docker Build</div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d;">Trivy Image<br><small>Scan</small></div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d;">Push to ECR</div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7;">Update GitOps<br><small>Image Tag</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4;">ArgoCD Sync<br><small>Deploy to EKS</small></div>
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4;">DAST Scan<br><small>OWASP ZAP</small></div>
+    </div>
+  </div>
+
+  <div class="arch-label">GitHub Actions Workflow Structure</div>
+  <div class="code-block">
+    <div class="code-header"><span>.github/workflows/ci-cd.yml</span><span class="lang">YAML</span></div>
+    <div class="code-body"><span class="keyword">name:</span> iMentora CI/CD DevSecOps Pipeline
+<span class="keyword">on:</span>
+  <span class="keyword">push:</span>
+    <span class="keyword">branches:</span> [main, develop]
+  <span class="keyword">pull_request:</span>
+    <span class="keyword">branches:</span> [main]
+
+<span class="keyword">jobs:</span>
+  <span class="comment"># ─── Stage 1: Secret Scanning ───</span>
+  <span class="func">secret-scan:</span>
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+
+  <span class="comment"># ─── Stage 2: SAST — Static Analysis ───</span>
+  <span class="func">sast-scan:</span>
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      - name: Quality Gate Check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+
+  <span class="comment"># ─── Stage 3: SCA — Dependency Scan ───</span>
+  <span class="func">sca-scan:</span>
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy Filesystem Scan (Dependencies)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+
+  <span class="comment"># ─── Stage 4: Build & Test ───</span>
+  <span class="func">build-test:</span>
+    needs: [sast-scan, sca-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node / Java / Python
+      - name: Install Dependencies
+      - name: Run Unit Tests
+      - name: Run Integration Tests
+      - name: Build Application
+
+  <span class="comment"># ─── Stage 5: Docker Build + Image Scan + Push ───</span>
+  <span class="func">docker-build-push:</span>
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build Docker Image
+        run: docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG .
+      - name: Trivy Image Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+      - name: Push to ECR
+        run: docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+
+  <span class="comment"># ─── Stage 6: Update GitOps Repo ───</span>
+  <span class="func">update-gitops:</span>
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IMENTORA-gitops
+        uses: actions/checkout@v4
+        with:
+          repository: lancier-tech-org/IMENTORA-gitops
+          token: ${{ secrets.GITOPS_PAT }}
+      - name: Update Image Tag in Manifests
+        run: |
+          sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG|"
+              overlays/dev/kustomization.yaml
+      - name: Commit & Push
+        run: |
+          git commit -am "chore: update image to $IMAGE_TAG"
+          git push
+
+  <span class="comment"># ─── Stage 7: DAST — Post-Deploy Scan ───</span>
+  <span class="func">dast-scan:</span>
+    needs: update-gitops
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for ArgoCD Sync (polling)
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: 'https://dev.lancieretech.com'</div>
+  </div>
+</div>
+
+<!-- ============ STEP 3: DOCKER + ECR ============ -->
+<div class="section" id="step3">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--accent3);">🐳</div>
+    <div>
+      <h2>Step 3 — Docker Image Creation & ECR Push</h2>
+      <p>Secure, optimized container images with vulnerability scanning</p>
+    </div>
+  </div>
+
+  <div class="arch-label">Docker Build Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent3);"></div>
+      <div class="flow-content">
+        <h4>1. Multi-Stage Dockerfile (Security Hardened)</h4>
+        <p>Use multi-stage builds to minimize attack surface. Only copy built artifacts to the final image. Run as non-root user. Use distroless or alpine base images.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent5);"></div>
+      <div class="flow-content">
+        <h4>2. Trivy Image Scan (Pre-Push Gate)</h4>
+        <p>Scan the built Docker image for OS and library vulnerabilities. Pipeline fails if CRITICAL or HIGH vulnerabilities are found. Generates SBOM (Software Bill of Materials).</p>
+        <div class="cmd">trivy image --severity CRITICAL,HIGH --exit-code 1 --format table $IMAGE</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent);"></div>
+      <div class="flow-content">
+        <h4>3. Tag Strategy</h4>
+        <p>Images are tagged with: git SHA (immutable), branch name, and semantic version for releases. Never use <code>:latest</code> in production.</p>
+        <div class="cmd">TAG=${GITHUB_SHA::8}  # Short SHA for immutable tags
+docker tag app:build $ECR_REGISTRY/imentora-dev-app:$TAG
+docker tag app:build $ECR_REGISTRY/imentora-dev-app:$BRANCH</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent4);"></div>
+      <div class="flow-content">
+        <h4>4. Push to ECR</h4>
+        <p>Authenticate using OIDC (no long-lived credentials). ECR automatically scans on push (as configured in Terraform). Images encrypted at rest with KMS.</p>
+        <div class="cmd">aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
+docker push $ECR_REGISTRY/imentora-dev-app:$TAG</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent2);"></div>
+      <div class="flow-content">
+        <h4>5. ECR Lifecycle & Cleanup</h4>
+        <p>Terraform-configured lifecycle policies automatically clean up untagged images after 7 days and keep only the last 30 tagged images to control costs.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-label">Dockerfile Best Practices</div>
+  <div class="code-block">
+    <div class="code-header"><span>Dockerfile</span><span class="lang">Docker</span></div>
+    <div class="code-body"><span class="comment"># ─── Stage 1: Build ───</span>
+<span class="keyword">FROM</span> node:20-alpine <span class="keyword">AS</span> builder
+<span class="keyword">WORKDIR</span> /app
+<span class="keyword">COPY</span> package*.json ./
+<span class="keyword">RUN</span> npm ci --only=production
+<span class="keyword">COPY</span> . .
+<span class="keyword">RUN</span> npm run build
+
+<span class="comment"># ─── Stage 2: Production (minimal) ───</span>
+<span class="keyword">FROM</span> node:20-alpine <span class="keyword">AS</span> production
+
+<span class="comment"># Security: Create non-root user</span>
+<span class="keyword">RUN</span> addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+
+<span class="keyword">WORKDIR</span> /app
+<span class="keyword">COPY</span> --from=builder --chown=appuser:appgroup /app/dist ./dist
+<span class="keyword">COPY</span> --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+
+<span class="comment"># Security: No root, read-only filesystem</span>
+<span class="keyword">USER</span> appuser
+<span class="keyword">EXPOSE</span> 3000
+<span class="keyword">HEALTHCHECK</span> --interval=30s --timeout=3s \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+<span class="keyword">CMD</span> ["node", "dist/main.js"]</div>
+  </div>
+</div>
+
+<!-- ============ STEP 4: EKS + ARGOCD ============ -->
+<div class="section" id="step4">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(236, 72, 153, 0.15); color: var(--accent6);">☸️</div>
+    <div>
+      <h2>Step 4 — EKS Deployment with ArgoCD (GitOps)</h2>
+      <p>Secure Kubernetes deployment with full GitOps workflow</p>
+    </div>
+  </div>
+
+  <div class="arch-label">GitOps Repository Structure — IMENTORA-gitops</div>
+  <div class="code-block">
+    <div class="code-header"><span>IMENTORA-gitops/</span><span class="lang">Directory</span></div>
+    <div class="code-body">IMENTORA-gitops/
+├── base/                        <span class="comment"># Common K8s manifests</span>
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── hpa.yaml                 <span class="comment"># Horizontal Pod Autoscaler</span>
+│   ├── network-policy.yaml      <span class="comment"># Pod-to-pod traffic rules</span>
+│   ├── service-account.yaml     <span class="comment"># IRSA-annotated SA</span>
+│   └── kustomization.yaml
+├── overlays/
+│   ├── dev/
+│   │   ├── kustomization.yaml   <span class="comment"># Dev-specific patches</span>
+│   │   ├── replicas-patch.yaml
+│   │   └── ingress.yaml
+│   ├── staging/
+│   └── prod/
+│       ├── kustomization.yaml
+│       ├── replicas-patch.yaml  <span class="comment"># Higher replicas</span>
+│       ├── resource-patch.yaml  <span class="comment"># Higher CPU/memory</span>
+│       └── ingress.yaml
+├── argocd/
+│   ├── application-dev.yaml
+│   ├── application-staging.yaml
+│   ├── application-prod.yaml
+│   └── project.yaml
+├── security/
+│   ├── pod-security-policy.yaml
+│   ├── kyverno-policies/        <span class="comment"># Policy enforcement</span>
+│   │   ├── disallow-privileged.yaml
+│   │   ├── require-labels.yaml
+│   │   ├── restrict-registries.yaml
+│   │   └── require-probes.yaml
+│   └── sealed-secrets/          <span class="comment"># Encrypted secrets in Git</span>
+└── monitoring/
+    ├── prometheus-servicemonitor.yaml
+    └── grafana-dashboard-configmap.yaml</div>
+  </div>
+
+  <div class="arch-label">ArgoCD Deployment Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent6);"></div>
+      <div class="flow-content">
+        <h4>1. ArgoCD Installation on EKS</h4>
+        <p>ArgoCD installed via Helm in its own namespace with SSO/OIDC integration, RBAC policies, and TLS-secured UI accessible via ingress at argocd.lancieretech.com.</p>
+        <div class="cmd">helm install argocd argo/argo-cd -n argocd \
+  --set server.ingress.enabled=true \
+  --set server.ingress.hosts[0]=argocd.lancieretech.com</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent2);"></div>
+      <div class="flow-content">
+        <h4>2. Application Registration</h4>
+        <p>ArgoCD Application CRDs point to the IMENTORA-gitops repo, watching specific overlay paths per environment. Auto-sync enabled for dev, manual sync for production.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent);"></div>
+      <div class="flow-content">
+        <h4>3. Sync & Deploy</h4>
+        <p>When CI pushes a new image tag to the gitops repo, ArgoCD detects the change and syncs the manifests to EKS. Sync waves ensure correct ordering (secrets → configmaps → deployment → service → ingress).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent4);"></div>
+      <div class="flow-content">
+        <h4>4. Health Checks & Rollback</h4>
+        <p>ArgoCD monitors deployment health. If pods fail readiness/liveness probes, automatic rollback kicks in. Deployment strategy uses RollingUpdate with maxSurge=1, maxUnavailable=0 for zero-downtime.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent5);"></div>
+      <div class="flow-content">
+        <h4>5. Security Controls in Cluster</h4>
+        <p>Kyverno policies enforce: no privileged containers, images only from ECR, required resource limits, mandatory health probes, no latest tags. Network Policies restrict pod-to-pod traffic.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-label">Kubernetes Security Checklist</div>
+  <div class="security-badges" style="justify-content: center; gap: 10px;">
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ IRSA (No AWS Keys in Pods)</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Network Policies</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Sealed Secrets</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Non-Root Containers</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Read-Only Root FS</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Resource Limits</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Kyverno Policies</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Registry Restriction</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Pod Security Standards</span>
+    <span class="sec-badge" style="border-color: rgba(16,185,129,0.3); color: var(--accent4); background: rgba(16,185,129,0.08);">✅ Audit Logging</span>
+  </div>
+</div>
+
+<!-- ============ STEP 5: MONITORING ============ -->
+<div class="section" id="step5">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent);">📊</div>
+    <div>
+      <h2>Step 5 — Monitoring (Prometheus + Grafana)</h2>
+      <p>Full observability stack with alerting</p>
+    </div>
+  </div>
+
+  <div class="arch-label">Monitoring Architecture</div>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">App Pods</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">EKS Nodes</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">RDS</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">DocumentDB</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">ElastiCache</div>
+    </div>
+    <div class="arch-arrow">↓ Metrics Exported ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fcd34d; min-width: 200px;">Prometheus<br><small>Scrape + Store + Alert Rules</small></div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fcd34d;">Alertmanager<br><small>Route Alerts</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #6ee7b7; min-width: 200px;">Grafana<br><small>Dashboards + Visualization</small></div>
+    </div>
+    <div class="arch-arrow">↓ Alerts To ↓</div>
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4;">Slack</div>
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4;">Email</div>
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4;">PagerDuty</div>
+    </div>
+  </div>
+
+  <div class="arch-label">Installation & Setup Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent3);"></div>
+      <div class="flow-content">
+        <h4>1. Install kube-prometheus-stack via Helm</h4>
+        <p>Deploy the complete monitoring stack (Prometheus, Grafana, Alertmanager, node-exporter, kube-state-metrics) as a single Helm chart into a dedicated <code>monitoring</code> namespace.</p>
+        <div class="cmd">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  -f custom-values.yaml</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent4);"></div>
+      <div class="flow-content">
+        <h4>2. Expose Grafana via Ingress</h4>
+        <p>Configure Grafana ingress with TLS certificate (ACM + ALB) at grafana.lancieretech.com. Enable OIDC-based authentication for secure access.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent);"></div>
+      <div class="flow-content">
+        <h4>3. Configure ServiceMonitors</h4>
+        <p>Create ServiceMonitor CRDs for iMentora application endpoints exposing /metrics. Prometheus auto-discovers and scrapes these targets.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent6);"></div>
+      <div class="flow-content">
+        <h4>4. Import/Create Grafana Dashboards</h4>
+        <p>Pre-built dashboards for: Kubernetes Cluster overview, Node metrics, Pod/Container metrics, Application-specific dashboards, RDS/DocumentDB/ElastiCache metrics via CloudWatch exporter, and ArgoCD deployment metrics.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent5);"></div>
+      <div class="flow-content">
+        <h4>5. Alert Rules & Routing</h4>
+        <p>Configure PrometheusRule CRDs for critical alerts: high CPU/memory usage, pod crash loops, deployment failures, database connection issues, certificate expiry, node not ready. Route alerts via Alertmanager to Slack/Email.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color: var(--accent2);"></div>
+      <div class="flow-content">
+        <h4>6. Log Aggregation (Optional Enhancement)</h4>
+        <p>Add Loki + Promtail for log aggregation alongside metrics. Correlate logs and metrics in the same Grafana dashboards for faster debugging.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-label">Key Grafana Dashboards</div>
+  <div class="module-grid">
+    <div class="module-card" style="border-left-color: var(--accent);">
+      <h5>🖥️ Cluster Overview</h5>
+      <div class="detail">Node count, CPU/Memory utilization</div>
+      <div class="detail">Pod distribution across nodes</div>
+      <div class="detail">Namespace resource consumption</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent2);">
+      <h5>🚀 Application Dashboard</h5>
+      <div class="detail">Request rate, latency (P50/P95/P99)</div>
+      <div class="detail">Error rate, HTTP status distribution</div>
+      <div class="detail">Pod restarts, replica count</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent3);">
+      <h5>🗄️ Database Dashboard</h5>
+      <div class="detail">RDS CPU, connections, IOPS</div>
+      <div class="detail">DocumentDB operations, latency</div>
+      <div class="detail">ElastiCache hit rate, memory</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent4);">
+      <h5>🔄 ArgoCD Dashboard</h5>
+      <div class="detail">Sync status per application</div>
+      <div class="detail">Deployment frequency</div>
+      <div class="detail">Sync failure alerts</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 6: SECURITY TOOLS ============ -->
+<div class="section" id="step6">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--accent5);">🔒</div>
+    <div>
+      <h2>Step 6 — DevSecOps Security Tools (Deep Dive)</h2>
+      <p>Comprehensive security scanning at every pipeline stage</p>
+    </div>
+  </div>
+
+  <div class="arch-label">Security Tools Matrix</div>
+  <table class="summary-table">
+    <thead>
+      <tr><th>Tool</th><th>Category</th><th>What It Scans</th><th>Pipeline Stage</th><th>Failure Criteria</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="color: var(--accent5); font-weight: 600;">Gitleaks</td><td>Secret Detection</td><td>Hardcoded secrets, API keys, tokens in code</td><td>Pre-Build (first)</td><td>Any secret found = FAIL</td></tr>
+      <tr><td style="color: var(--accent2); font-weight: 600;">SonarQube</td><td>SAST</td><td>Code quality, bugs, code smells, security hotspots</td><td>Pre-Build</td><td>Quality Gate failure</td></tr>
+      <tr><td style="color: var(--accent); font-weight: 600;">Trivy (FS)</td><td>SCA</td><td>Vulnerable dependencies in package.json, pom.xml, etc.</td><td>Pre-Build</td><td>CRITICAL/HIGH vulns</td></tr>
+      <tr><td style="color: var(--accent3); font-weight: 600;">OWASP Dep-Check</td><td>SCA</td><td>Known CVEs in project dependencies (NVD database)</td><td>Pre-Build</td><td>CVSS ≥ 7.0</td></tr>
+      <tr><td style="color: var(--accent4); font-weight: 600;">Trivy (Image)</td><td>Container Scan</td><td>OS packages, library vulnerabilities in Docker image</td><td>Post-Build</td><td>CRITICAL/HIGH vulns</td></tr>
+      <tr><td style="color: var(--accent6); font-weight: 600;">OWASP ZAP</td><td>DAST</td><td>Running application for XSS, SQLi, CSRF, etc.</td><td>Post-Deploy</td><td>HIGH risk alerts</td></tr>
+    </tbody>
+  </table>
+
+  <div class="arch-label">Security Pipeline Flow — Detailed</div>
+
+  <div class="stage-item expanded" onclick="this.classList.toggle('expanded')">
+    <div class="stage-header">
+      <div class="stage-num" style="background: rgba(239,68,68,0.15); color: var(--accent5);">1</div>
+      <h4>Gitleaks — Secret Detection</h4>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="stage-details">
+      <p><strong>Purpose:</strong> Scans the entire git history and current commit for accidentally committed secrets such as AWS keys, database passwords, API tokens, private keys, and JWT secrets.</p>
+      <p><strong>How it works:</strong> Uses regex patterns and entropy analysis to detect secrets. Runs on every push and PR. If a secret is found, the pipeline immediately fails before any code is built or deployed.</p>
+      <p><strong>Configuration:</strong> Custom <code>.gitleaks.toml</code> can add project-specific patterns (e.g., custom API key formats) and allowlists for false positives.</p>
+      <p><strong>Remediation:</strong> If a secret is detected, the developer must rotate the credential immediately, remove it from git history using <code>git filter-branch</code> or BFG Repo-Cleaner, and store it in AWS Secrets Manager instead.</p>
+      <div class="cmd">gitleaks detect --source . --report-format json --report-path gitleaks-report.json</div>
+    </div>
+  </div>
+
+  <div class="stage-item" onclick="this.classList.toggle('expanded')">
+    <div class="stage-header">
+      <div class="stage-num" style="background: rgba(139,92,246,0.15); color: var(--accent2);">2</div>
+      <h4>SonarQube — SAST (Static Application Security Testing)</h4>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="stage-details">
+      <p><strong>Purpose:</strong> Analyzes source code without executing it. Detects security vulnerabilities (SQL injection patterns, XSS vectors, hardcoded credentials), code bugs, code smells, and technical debt.</p>
+      <p><strong>Quality Gate:</strong> Defines pass/fail criteria — e.g., zero new critical vulnerabilities, code coverage ≥ 80%, duplication ≤ 3%. Pipeline fails if Quality Gate is not passed.</p>
+      <p><strong>Security Hotspots:</strong> Flags code patterns that could be vulnerable but require human review (e.g., crypto usage, regex patterns vulnerable to ReDoS).</p>
+      <p><strong>Integration:</strong> SonarQube runs as a container on EKS (deployed via the sonarqube Terraform module). GitHub Actions sends analysis via <code>sonar-scanner</code>, and results appear as PR decorations.</p>
+      <div class="cmd">sonar-scanner \
+  -Dsonar.projectKey=imentora \
+  -Dsonar.host.url=$SONAR_HOST_URL \
+  -Dsonar.token=$SONAR_TOKEN \
+  -Dsonar.qualitygate.wait=true</div>
+    </div>
+  </div>
+
+  <div class="stage-item" onclick="this.classList.toggle('expanded')">
+    <div class="stage-header">
+      <div class="stage-num" style="background: rgba(6,182,212,0.15); color: var(--accent);">3</div>
+      <h4>Trivy — SCA & Container Vulnerability Scanning</h4>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="stage-details">
+      <p><strong>Purpose (Filesystem Scan):</strong> Scans project dependencies (npm packages, Python libraries, Java JARs) for known CVEs. Checks lock files like <code>package-lock.json</code>, <code>yarn.lock</code>, <code>requirements.txt</code>.</p>
+      <p><strong>Purpose (Image Scan):</strong> After Docker build, scans the image layers for OS-level vulnerabilities (Alpine, Debian packages) and application-level library vulnerabilities.</p>
+      <p><strong>SBOM Generation:</strong> Trivy can generate a Software Bill of Materials (SBOM) in CycloneDX or SPDX format, providing a complete inventory of all components in your application.</p>
+      <p><strong>Severity Levels:</strong> CRITICAL (actively exploited), HIGH (severe impact), MEDIUM/LOW (informational). Pipeline fails on CRITICAL and HIGH by default.</p>
+      <div class="cmd"><span class="comment"># Filesystem scan (dependencies)</span>
+trivy fs --severity CRITICAL,HIGH --exit-code 1 .
+
+<span class="comment"># Image scan (post-build)</span>
+trivy image --severity CRITICAL,HIGH --exit-code 1 imentora-app:latest
+
+<span class="comment"># SBOM generation</span>
+trivy image --format cyclonedx --output sbom.json imentora-app:latest</div>
+    </div>
+  </div>
+
+  <div class="stage-item" onclick="this.classList.toggle('expanded')">
+    <div class="stage-header">
+      <div class="stage-num" style="background: rgba(245,158,11,0.15); color: var(--accent3);">4</div>
+      <h4>OWASP Dependency-Check — Software Composition Analysis</h4>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="stage-details">
+      <p><strong>Purpose:</strong> Cross-references project dependencies against the NVD (National Vulnerability Database) to identify components with known CVEs. Provides detailed CVE reports with CVSS scores.</p>
+      <p><strong>How it complements Trivy:</strong> OWASP Dep-Check uses the official NVD database and CPE matching, while Trivy uses its own vulnerability DB. Running both provides broader coverage — some vulns are caught by one but not the other.</p>
+      <p><strong>Report:</strong> Generates HTML/JSON reports showing each vulnerable dependency, the CVE ID, CVSS score, and recommended fix version.</p>
+      <div class="cmd">dependency-check --project "iMentora" \
+  --scan . \
+  --format HTML \
+  --failOnCVSS 7 \
+  --suppression suppression.xml</div>
+    </div>
+  </div>
+
+  <div class="stage-item" onclick="this.classList.toggle('expanded')">
+    <div class="stage-header">
+      <div class="stage-num" style="background: rgba(236,72,153,0.15); color: var(--accent6);">5</div>
+      <h4>OWASP ZAP — DAST (Dynamic Application Security Testing)</h4>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="stage-details">
+      <p><strong>Purpose:</strong> Tests the running application by sending actual HTTP requests to find vulnerabilities like XSS (Cross-Site Scripting), SQL Injection, CSRF (Cross-Site Request Forgery), insecure headers, session management issues, and more.</p>
+      <p><strong>When it runs:</strong> After deployment to dev/staging environment via ArgoCD. This is the final security gate — it tests the real deployed application.</p>
+      <p><strong>Scan Types:</strong> Baseline scan (passive, fast — checks headers and common issues), Full scan (active — attempts actual exploit patterns), API scan (tests REST/GraphQL endpoints with OpenAPI spec).</p>
+      <p><strong>Integration:</strong> ZAP runs as a GitHub Action step. It can use the OpenAPI/Swagger spec to intelligently test all API endpoints. Results are posted as GitHub issue or PR comment.</p>
+      <div class="cmd"><span class="comment"># Full scan against deployed application</span>
+zap-full-scan.py -t https://dev.lancieretech.com \
+  -r zap-report.html \
+  -J zap-report.json \
+  -l WARN
+
+<span class="comment"># API scan with OpenAPI spec</span>
+zap-api-scan.py -t https://api.dev.lancieretech.com/swagger.json \
+  -f openapi</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FULL ARCHITECTURE ============ -->
+<div class="section" id="arch">
+  <div class="section-header">
+    <div class="section-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--accent2);">🗺️</div>
+    <div>
+      <h2>Full Architecture — End-to-End Flow</h2>
+      <p>Complete DevSecOps lifecycle from code commit to production monitoring</p>
+    </div>
+  </div>
+
+  <div class="arch-diagram" style="text-align: center;">
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 16px; font-weight: 600;">Developer Workflow</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.5); color: #c4b5fd; min-width: 160px;">
+        👨‍💻 Developer<br><small>git push to IMENTORA-app</small>
+      </div>
+    </div>
+    <div class="arch-arrow">↓</div>
+
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent5); margin: 12px 0 8px; font-weight: 600;">Security Scanning (GitHub Actions)</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">🔑 Gitleaks</div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">🔍 SonarQube<br><small>SAST</small></div>
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">📦 Trivy + OWASP<br><small>SCA</small></div>
+    </div>
+    <div class="arch-arrow">↓ Pass ↓</div>
+
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin: 12px 0 8px; font-weight: 600;">Build & Containerize</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">🧪 Unit Tests</div>
+      <div class="arch-box" style="background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #67e8f9;">🔨 Build App</div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d;">🐳 Docker Build</div>
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d;">🔍 Trivy Image</div>
+    </div>
+    <div class="arch-arrow">↓ Pass ↓</div>
+
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent3); margin: 12px 0 8px; font-weight: 600;">Push & GitOps Update</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fcd34d; min-width: 160px;">📤 Push to ECR<br><small>664418964913.dkr.ecr.ap-south-1</small></div>
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7; min-width: 160px;">📝 Update IMENTORA-gitops<br><small>New image tag in manifests</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent6); margin: 12px 0 8px; font-weight: 600;">Deploy (ArgoCD → EKS)</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4; min-width: 160px;">🔄 ArgoCD Detects Change<br><small>Auto-sync for dev</small></div>
+      <div class="arch-box" style="background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f9a8d4; min-width: 160px;">☸️ Deploy to EKS<br><small>Rolling update, zero-downtime</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">🕷️ OWASP ZAP<br><small>DAST Scan</small></div>
+    </div>
+    <div class="arch-arrow">↓</div>
+
+    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent4); margin: 12px 0 8px; font-weight: 600;">Monitor & Observe</div>
+
+    <div class="arch-row">
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7;">📊 Prometheus<br><small>Metrics Collection</small></div>
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7;">📈 Grafana<br><small>Dashboards</small></div>
+      <div class="arch-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7;">🚨 Alertmanager<br><small>Slack / Email</small></div>
+    </div>
+  </div>
+
+  <div class="arch-label">Three-Repository Architecture</div>
+  <div class="module-grid">
+    <div class="module-card" style="border-left-color: var(--accent2);">
+      <h5>📁 IMENTORA-app</h5>
+      <div class="detail">Application source code</div>
+      <div class="detail">Dockerfile</div>
+      <div class="detail">CI/CD pipeline (.github/workflows)</div>
+      <div class="detail">Unit & integration tests</div>
+      <div class="detail">sonar-project.properties</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent4);">
+      <h5>📁 IMENTORA-gitops</h5>
+      <div class="detail">Kubernetes manifests (base + overlays)</div>
+      <div class="detail">ArgoCD Application CRDs</div>
+      <div class="detail">Kyverno security policies</div>
+      <div class="detail">Monitoring configs (ServiceMonitors)</div>
+      <div class="detail">Sealed Secrets</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent3);">
+      <h5>📁 IMENTORA-infra</h5>
+      <div class="detail">Terraform modules (VPC, EKS, RDS...)</div>
+      <div class="detail">Environment configs (dev/staging/prod)</div>
+      <div class="detail">IAM policies & KMS keys</div>
+      <div class="detail">Infra CI/CD (plan on PR, apply on merge)</div>
+      <div class="detail">tfsec & checkov security scanning</div>
+    </div>
+  </div>
+
+  <div class="arch-label">Infrastructure on AWS (ap-south-1)</div>
+  <div class="module-grid">
+    <div class="module-card" style="border-left-color: var(--accent);">
+      <h5>Compute</h5>
+      <div class="detail">EKS Cluster (private API)</div>
+      <div class="detail">Managed Node Groups (private subnets)</div>
+      <div class="detail">ALB Ingress Controller</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent5);">
+      <h5>Data Stores</h5>
+      <div class="detail">RDS MySQL (encrypted, Multi-AZ)</div>
+      <div class="detail">DocumentDB (TLS, encrypted)</div>
+      <div class="detail">ElastiCache Redis (AUTH, encrypted)</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent2);">
+      <h5>Security & Networking</h5>
+      <div class="detail">VPC with public/private subnets</div>
+      <div class="detail">NAT Gateway, VPC Endpoints</div>
+      <div class="detail">WAF, Shield, Security Groups</div>
+      <div class="detail">KMS, Secrets Manager, ACM</div>
+    </div>
+    <div class="module-card" style="border-left-color: var(--accent4);">
+      <h5>Observability</h5>
+      <div class="detail">Prometheus + Grafana on EKS</div>
+      <div class="detail">CloudWatch (control plane logs)</div>
+      <div class="detail">CloudTrail (API audit)</div>
+      <div class="detail">GuardDuty (threat detection)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab navigation
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
