@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMentora — Infrastructure Discovery Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --bg: #0a0e17; --surface: #111827; --surface2: #1a2234; --border: #1e293b;
+    --accent: #06b6d4; --accent2: #8b5cf6; --accent3: #f59e0b; --accent4: #10b981;
+    --accent5: #ef4444; --accent6: #ec4899;
+    --text: #e2e8f0; --text-dim: #94a3b8; --text-bright: #f8fafc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  .hero { text-align: center; padding: 40px 20px 20px; position: relative; }
+  .hero::before {
+    content: ''; position: absolute; inset: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(139,92,246,0.06) 0%, transparent 50%);
+  }
+  .hero h1 { font-size: 2.2rem; font-weight: 800; position: relative; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero .sub { font-size: 0.92rem; color: var(--text-dim); position: relative; margin-top: 4px; }
+
+  .tabs {
+    display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 100; background: var(--bg);
+    padding: 10px 12px 12px; border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 500; transition: all 0.3s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(139,92,246,0.15)); border-color: var(--accent); color: var(--text-bright); }
+
+  .pnl { display: none; }
+  .pnl.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .sec-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .sec-head h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-bright); }
+  .sec-head p { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Alert box */
+  .alert {
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .alert.critical { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+  .alert.warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); }
+  .alert.success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); }
+  .alert.info { background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.2); }
+  .alert .icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+  .alert .content { flex: 1; }
+  .alert .title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
+  .alert.critical .title { color: var(--accent5); }
+  .alert.warning .title { color: var(--accent3); }
+  .alert.success .title { color: var(--accent4); }
+  .alert.info .title { color: var(--accent); }
+  .alert .desc { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* Finding card */
+  .finding {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 12px;
+    border-left: 3px solid; transition: all 0.2s;
+  }
+  .finding:hover { border-color: rgba(6,182,212,0.3); border-left-color: inherit; }
+  .finding h4 { font-size: 0.9rem; font-weight: 600; color: var(--text-bright); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .finding .detail { font-size: 0.8rem; color: var(--text-dim); padding: 3px 0 3px 16px; position: relative; }
+  .finding .detail::before { content: '›'; position: absolute; left: 2px; opacity: 0.5; }
+  .finding .detail.highlight { color: var(--accent); font-weight: 500; }
+  .finding .detail.warn { color: var(--accent3); }
+  .finding .detail.danger { color: var(--accent5); }
+
+  /* vs comparison */
+  .vs-box {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px;
+    align-items: center; margin: 16px 0;
+  }
+  .vs-side {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .vs-side h5 { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 6px; }
+  .vs-side .val { font-size: 1.1rem; font-weight: 700; }
+  .vs-mid { font-size: 1.2rem; color: var(--text-dim); }
+
+  /* Table */
+  .tbl { width: 100%; border-collapse: collapse; margin: 14px 0; }
+  .tbl th, .tbl td { padding: 10px 14px; text-align: left; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+  .tbl th { font-weight: 600; color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; background: var(--surface2); }
+
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+  .tag.green { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .tag.yellow { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .tag.red { background: rgba(239,68,68,0.15); color: var(--accent5); }
+  .tag.blue { background: rgba(6,182,212,0.15); color: var(--accent); }
+  .tag.purple { background: rgba(139,92,246,0.15); color: var(--accent2); }
+
+  /* Code */
+  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 14px 0; }
+  .code-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: rgba(30,41,59,0.5); border-bottom: 1px solid var(--border); }
+  .code-head span { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--text-dim); }
+  .code-head .lang { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(6,182,212,0.1); color: var(--accent); }
+  .code-body { padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; line-height: 1.7; color: #e6edf3; overflow-x: auto; white-space: pre; }
+  .cm { color: #6b7b8d; } .kw { color: #ff7b72; } .st { color: #a5d6ff; } .vl { color: #79c0ff; }
+
+  /* Node group cards */
+  .ng-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin: 16px 0; }
+  .ng-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; border-top: 3px solid; position: relative; overflow: hidden;
+  }
+  .ng-card::after {
+    content: attr(data-label); position: absolute; top: 8px; right: 12px;
+    font-size: 0.68rem; font-weight: 600; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .ng-card h4 { font-size: 1rem; font-weight: 700; color: var(--text-bright); margin-bottom: 10px; }
+  .ng-card .price { font-size: 0.8rem; color: var(--accent3); font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; }
+  .spec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin: 10px 0; }
+  .spec { background: var(--surface2); border-radius: 6px; padding: 8px; text-align: center; }
+  .spec .num { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .spec .lbl { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+  .why { background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.12); border-radius: 6px; padding: 10px 14px; margin-top: 10px; font-size: 0.78rem; color: var(--text-dim); }
+  .why strong { color: var(--accent); }
+
+  /* Cost card */
+  .cost-card {
+    background: linear-gradient(135deg, rgba(6,182,212,0.06), rgba(139,92,246,0.06));
+    border: 1px solid rgba(6,182,212,0.15); border-radius: 14px; padding: 22px; margin: 16px 0;
+  }
+  .cost-card h3 { color: var(--text-bright); margin-bottom: 12px; font-size: 1rem; }
+  .cost-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(30,41,59,0.4); font-size: 0.82rem; }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row .svc { color: var(--text-dim); }
+  .cost-row .amt { font-family: 'JetBrains Mono', monospace; color: var(--accent3); font-weight: 600; }
+  .cost-total { display: flex; justify-content: space-between; padding: 10px 0 0; margin-top: 6px; border-top: 2px solid var(--border); font-weight: 700; }
+  .cost-total .amt { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.6rem; }
+    .tab { padding: 7px 10px; font-size: 0.72rem; }
+    .vs-box { grid-template-columns: 1fr; }
+    .vs-mid { text-align: center; }
+    .ng-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>iMentora Discovery Report</h1>
+  <p class="sub">Analysis of app.py, requirements.txt, setup.sh — with revised infrastructure plan</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-t="alerts">🚨 Critical Findings</button>
+  <button class="tab" data-t="analysis">🔍 Code Analysis</button>
+  <button class="tab" data-t="gpu">🎮 GPU Strategy</button>
+  <button class="tab" data-t="revised">📐 Revised Infra Plan</button>
+  <button class="tab" data-t="docker">🐳 Dockerfile Design</button>
+  <button class="tab" data-t="cost">💰 Updated Costs</button>
+</div>
+
+<!-- ============== CRITICAL FINDINGS ============== -->
+<div class="pnl active container" id="alerts">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(239,68,68,0.15); color: var(--accent5);">🚨</div>
+    <div>
+      <h2>Critical Findings — Must Address Before Infrastructure</h2>
+      <p>Issues discovered from your actual code that change the infrastructure plan</p>
+    </div>
+  </div>
+
+  <div class="alert critical">
+    <div class="icon">🔑</div>
+    <div class="content">
+      <div class="title">CRITICAL: API Keys Exposed — Rotate Immediately</div>
+      <div class="desc">
+        Your OpenAI and Groq API keys were shared in plain text. These must be rotated NOW:<br>
+        → OpenAI: <a href="https://platform.openai.com/api-keys" style="color: var(--accent);">platform.openai.com/api-keys</a> → Delete old key → Create new key<br>
+        → Groq: <a href="https://console.groq.com/keys" style="color: var(--accent);">console.groq.com/keys</a> → Delete old key → Create new key<br>
+        → On AWS: Store new keys in <strong>AWS Secrets Manager</strong>, never in code or .env files committed to Git
+      </div>
+    </div>
+  </div>
+
+  <div class="alert critical">
+    <div class="icon">🎮</div>
+    <div class="content">
+      <div class="title">GPU IS REQUIRED — Multiple Local ML Models Found</div>
+      <div class="desc">
+        Your requirements.txt reveals <strong>4 local ML models</strong>, not just YOLO:<br>
+        <strong>1. ultralytics (YOLOv8)</strong> — Object detection, runs 3x per image<br>
+        <strong>2. insightface</strong> — Face recognition/analysis (GPU-accelerated)<br>
+        <strong>3. speechbrain</strong> — Speech processing/speaker verification (GPU-accelerated)<br>
+        <strong>4. Resemblyzer</strong> — Speaker embedding/voice similarity<br>
+        Plus: <code>torch==2.6.0</code> with <code>CUDA 12.6</code> and <code>opencv-python</code><br>
+        → This confirms: <strong>GPU node group IS required</strong> alongside CPU nodes
+      </div>
+    </div>
+  </div>
+
+  <div class="alert warning">
+    <div class="icon">🔌</div>
+    <div class="content">
+      <div class="title">Port is 8090, NOT 8030</div>
+      <div class="desc">
+        Documentation said 8030, but <code>app.py</code> line shows <code>port = 8090</code>. All K8s Service, Deployment, Ingress, and health check configs must target port <strong>8090</strong>. The containerPort, service targetPort, and readiness probe must all match.
+      </div>
+    </div>
+  </div>
+
+  <div class="alert warning">
+    <div class="icon">🗄️</div>
+    <div class="content">
+      <div class="title">BOTH MySQL AND SQL Server Drivers Present</div>
+      <div class="desc">
+        requirements.txt has both:<br>
+        → <code>mysql-connector-python</code> (MySQL driver)<br>
+        → <code>pyodbc==5.2.0</code> (SQL Server / ODBC driver)<br>
+        This means different modules may use different databases, OR one is legacy. <strong>Need to confirm with dev team</strong> which modules use which DB before choosing RDS engine.
+      </div>
+    </div>
+  </div>
+
+  <div class="alert warning">
+    <div class="icon">📂</div>
+    <div class="content">
+      <div class="title">6 Directories Must Exist in Container</div>
+      <div class="desc">
+        setup.sh creates these directories that your app expects:<br>
+        <code>daily_standup/audio</code>, <code>daily_standup/temp</code>, <code>daily_standup/reports</code><br>
+        <code>weekly_interview/audio</code>, <code>weekly_interview/temp</code>, <code>weekly_interview/reports</code><br>
+        → Dockerfile must create these, OR use K8s emptyDir volumes
+      </div>
+    </div>
+  </div>
+
+  <div class="alert info">
+    <div class="icon">✅</div>
+    <div class="content">
+      <div class="title">Redis Already in Requirements</div>
+      <div class="desc">
+        <code>redis==6.0.0</code> is already in requirements.txt — your app may already have Redis integration. This confirms ElastiCache Redis is the right choice. No code changes needed for the caching layer.
+      </div>
+    </div>
+  </div>
+
+  <div class="alert info">
+    <div class="icon">✅</div>
+    <div class="content">
+      <div class="title">SSL Handled by Certs Directory</div>
+      <div class="desc">
+        app.py checks for <code>./certs/key.pem</code> and <code>./certs/cert.pem</code>. On AWS with ALB, we don't include certs in the container — ALB terminates SSL using ACM certificates. The app will run in HTTP mode inside the cluster (no certs dir), which is the correct pattern.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== CODE ANALYSIS ============== -->
+<div class="pnl container" id="analysis">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(6,182,212,0.15); color: var(--accent);">🔍</div>
+    <div>
+      <h2>Detailed Code Analysis</h2>
+      <p>What we learned from app.py, requirements.txt, and setup.sh</p>
+    </div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent);">
+    <h4>📍 Application Architecture (from app.py)</h4>
+    <div class="detail highlight">Single FastAPI monolith mounting 3 sub-apps</div>
+    <div class="detail">Port: <strong>8090</strong> (not 8030 as documented)</div>
+    <div class="detail">Sub-apps: /daily_standup, /weekend_mocktest, /weekly_interview</div>
+    <div class="detail">CORS: allow_origins=["*"] (needs restricting for production)</div>
+    <div class="detail">SSL: Optional — checks ./certs/ directory, runs HTTP if absent</div>
+    <div class="detail">Health endpoint: /healthz (returns {"status": "ok"})</div>
+    <div class="detail">Debug endpoint: /debug/mounted-apps</div>
+    <div class="detail">Static files: served from /static directory</div>
+    <div class="detail">WebSocket: Built-in support with ping_interval=20, ping_timeout=20</div>
+    <div class="detail">Uvicorn: reload=True in dev (disable in production container)</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent5);">
+    <h4>🎮 ML/AI Models — LOCAL Processing (GPU Required)</h4>
+    <div class="detail danger"><strong>ultralytics==8.3.240</strong> — YOLOv8 object detection (3 runs per image)</div>
+    <div class="detail danger"><strong>insightface==0.7.3</strong> — Face recognition & analysis (ONNX-based, GPU-accelerated)</div>
+    <div class="detail danger"><strong>speechbrain==1.0.3</strong> — Speech processing / speaker verification</div>
+    <div class="detail danger"><strong>Resemblyzer==0.1.4</strong> — Speaker voice embedding similarity</div>
+    <div class="detail danger"><strong>torch==2.6.0</strong> — PyTorch (CUDA 12.6 required from setup.sh)</div>
+    <div class="detail danger"><strong>opencv-python==4.12.0.88</strong> — Image processing (CPU but used with YOLO)</div>
+    <div class="detail danger"><strong>onnxruntime==1.23.2</strong> — ONNX model inference (for insightface)</div>
+    <div class="detail warn">Model files: yolov8m.pt (~50 MB), fallback yolov8s.pt (~22 MB)</div>
+    <div class="detail warn">Total GPU VRAM needed: ~4-6 GB (YOLO + InsightFace + SpeechBrain concurrent)</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent3);">
+    <h4>🔗 External API Calls (No Local Compute)</h4>
+    <div class="detail">openai==1.76.2 — GPT-4 conversation/evaluation (API call)</div>
+    <div class="detail">groq==0.23.1 — Whisper STT + LLM questions (API call)</div>
+    <div class="detail">langchain==0.3.25 + langchain-groq + langchain-openai</div>
+    <div class="detail">tiktoken==0.9.0 — Token counting for API calls</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent4);">
+    <h4>🗄️ Database Drivers Found</h4>
+    <div class="detail highlight">pymongo==4.5.0 — MongoDB sync driver</div>
+    <div class="detail highlight">motor==3.3.1 — MongoDB async driver (used by FastAPI)</div>
+    <div class="detail warn">mysql-connector-python — MySQL driver</div>
+    <div class="detail warn">pyodbc==5.2.0 — SQL Server / ODBC driver</div>
+    <div class="detail">SQLAlchemy==2.0.41 — ORM (may wrap either MySQL or SQL Server)</div>
+    <div class="detail">redis==6.0.0 — Redis client (ElastiCache ready!)</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent6);">
+    <h4>🔊 Audio Processing Stack</h4>
+    <div class="detail">pydub==0.25.1 — Audio manipulation (needs FFmpeg)</div>
+    <div class="detail">PyAudio==0.2.14 — Audio recording (needs portaudio dev headers)</div>
+    <div class="detail">sounddevice==0.5.1 — Audio I/O</div>
+    <div class="detail">soundfile==0.13.1 — Audio file reading (needs libsndfile)</div>
+    <div class="detail">webrtcvad==2.0.10 — Voice Activity Detection</div>
+    <div class="detail">librosa==0.11.0 — Audio analysis</div>
+    <div class="detail">scipy==1.13.1 — Signal processing</div>
+    <div class="detail warn">System dependency: FFmpeg (installed via apt in setup.sh)</div>
+    <div class="detail warn">System dependency: PortAudio headers for PyAudio compilation</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent2);">
+    <h4>📦 Other Notable Dependencies</h4>
+    <div class="detail">reportlab — PDF generation (for reports)</div>
+    <div class="detail">fpdf==1.7.2 — Alternative PDF generator</div>
+    <div class="detail">streamlit==1.45.1 — Dashboard UI? (needs investigation)</div>
+    <div class="detail">pillow==11.2.1 — Image processing</div>
+    <div class="detail">pandas==2.2.3 — Data manipulation</div>
+    <div class="detail">faiss-cpu==1.10.0 — Similarity search (LangChain vector store?)</div>
+    <div class="detail">gTTS==2.5.4 — Google Text-to-Speech (backup TTS?)</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent);">
+    <h4>📁 Required Directories (from setup.sh)</h4>
+    <div class="detail">daily_standup/audio — TTS generated audio files</div>
+    <div class="detail">daily_standup/temp — Temporary audio processing</div>
+    <div class="detail">daily_standup/reports — Generated PDF reports</div>
+    <div class="detail">weekly_interview/audio — Interview audio files</div>
+    <div class="detail">weekly_interview/temp — Interview temp files</div>
+    <div class="detail">weekly_interview/reports — Interview PDF reports</div>
+    <div class="detail">static — Frontend HTML/JS/CSS files</div>
+    <div class="detail">certs — SSL certificates (NOT needed in K8s)</div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent3);">
+    <h4>🔐 Environment Variables (from .env and app.py)</h4>
+    <div class="detail highlight">OPENAI_API_KEY → AWS Secrets Manager</div>
+    <div class="detail highlight">GROQ_API_KEY → AWS Secrets Manager</div>
+    <div class="detail">MongoDB connection vars → K8s ConfigMap (host from DocumentDB)</div>
+    <div class="detail">MySQL/SQL Server vars → K8s ConfigMap (host from RDS)</div>
+    <div class="detail warn">Need to check: are there MORE env vars in daily_standup/core/config.py?</div>
+  </div>
+</div>
+
+<!-- ============== GPU STRATEGY ============== -->
+<div class="pnl container" id="gpu">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(245,158,11,0.15); color: var(--accent3);">🎮</div>
+    <div>
+      <h2>GPU Node Strategy — Revised</h2>
+      <p>Mixed node groups: CPU for API + GPU for ML inference</p>
+    </div>
+  </div>
+
+  <div class="alert warning">
+    <div class="icon">💡</div>
+    <div class="content">
+      <div class="title">Key Architecture Decision: Separate ML Processing</div>
+      <div class="desc">
+        Since all 3 sub-apps run in ONE container, and only biometric_auth.py needs GPU, we have two options:<br>
+        <strong>Option A:</strong> Run the entire monolith on GPU nodes (wasteful — GPU idle 90% of the time)<br>
+        <strong>Option B:</strong> Split biometric_auth into a separate microservice on GPU nodes (efficient but more complex)<br>
+        → <strong>Recommendation: Start with Option A</strong> (simpler), migrate to Option B when you split into microservices later
+      </div>
+    </div>
+  </div>
+
+  <div class="ng-grid">
+    <div class="ng-card" style="border-top-color: var(--accent);" data-label="CPU Group">
+      <h4>🖥️ CPU Node Group — App Workloads</h4>
+      <div class="price">m5.xlarge → ~$138/month per node</div>
+      <div class="spec-grid">
+        <div class="spec"><div class="num">4</div><div class="lbl">vCPUs</div></div>
+        <div class="spec"><div class="num">16</div><div class="lbl">GB RAM</div></div>
+        <div class="spec"><div class="num">50</div><div class="lbl">GB Disk</div></div>
+      </div>
+      <div class="why">
+        <strong>Runs:</strong> Monitoring (Prometheus/Grafana), ArgoCD, Ingress Controller, SonarQube, and any future non-ML services. These don't need GPU and would waste expensive GPU resources.
+      </div>
+      <table class="tbl" style="margin-top: 10px;">
+        <tr><td style="color: var(--text-dim);">Min/Max/Desired</td><td>2 / 4 / 2</td></tr>
+        <tr><td style="color: var(--text-dim);">Taints</td><td>None (default scheduling)</td></tr>
+        <tr><td style="color: var(--text-dim);">Labels</td><td>workload-type=general</td></tr>
+      </table>
+    </div>
+
+    <div class="ng-card" style="border-top-color: var(--accent3);" data-label="GPU Group">
+      <h4>🎮 GPU Node Group — ML Inference</h4>
+      <div class="price">g4dn.xlarge → ~$526/month per node</div>
+      <div class="spec-grid">
+        <div class="spec"><div class="num">4</div><div class="lbl">vCPUs</div></div>
+        <div class="spec"><div class="num">16</div><div class="lbl">GB RAM</div></div>
+        <div class="spec"><div class="num">16</div><div class="lbl">GB VRAM</div></div>
+        <div class="spec"><div class="num">T4</div><div class="lbl">GPU</div></div>
+      </div>
+      <div class="why">
+        <strong>Runs:</strong> iMentora application pods (because YOLO + InsightFace + SpeechBrain need GPU). The NVIDIA T4 GPU with 16 GB VRAM handles all 4 ML models concurrently. The g4dn.xlarge is the most cost-effective GPU instance — purpose-built for ML inference.
+      </div>
+      <table class="tbl" style="margin-top: 10px;">
+        <tr><td style="color: var(--text-dim);">Min/Max/Desired</td><td>1 / 3 / 2</td></tr>
+        <tr><td style="color: var(--text-dim);">Taints</td><td>nvidia.com/gpu=true:NoSchedule</td></tr>
+        <tr><td style="color: var(--text-dim);">Tolerations</td><td>App pods tolerate GPU taint</td></tr>
+        <tr><td style="color: var(--text-dim);">AMI</td><td>EKS GPU-optimized AMI (includes NVIDIA drivers)</td></tr>
+        <tr><td style="color: var(--text-dim);">GPU Plugin</td><td>NVIDIA device plugin DaemonSet required</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent3);">
+    <h4>🎯 Why g4dn.xlarge (Not Other GPU Instances)</h4>
+    <div class="detail highlight">NVIDIA T4 GPU — 16 GB VRAM — perfect for inference (not training)</div>
+    <div class="detail">YOLOv8m needs ~2 GB VRAM per inference</div>
+    <div class="detail">InsightFace (ONNX) needs ~1-2 GB VRAM</div>
+    <div class="detail">SpeechBrain needs ~1-2 GB VRAM</div>
+    <div class="detail">Total peak: ~6-8 GB → 16 GB T4 has plenty of headroom</div>
+    <div class="detail warn">p3.2xlarge (V100) — $3.06/hr — massive overkill, 4x the cost</div>
+    <div class="detail warn">g5.xlarge (A10G) — $1.006/hr — newer but 2x cost for minimal benefit at inference</div>
+    <div class="detail highlight">g4dn.xlarge — $0.526/hr — best price/performance for inference workloads</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>EKS Mixed Node Groups — Terraform</span><span class="lang">HCL</span></div>
+    <div class="code-body"><span class="cm"># ─── CPU Node Group (general workloads) ───</span>
+<span class="kw">resource</span> "aws_eks_node_group" "cpu_nodes" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = <span class="st">"imentora-dev-cpu"</span>
+  node_role_arn   = aws_iam_role.eks_node.arn
+  subnet_ids      = var.private_subnet_ids
+
+  instance_types = [<span class="st">"m5.xlarge"</span>]
+  disk_size      = <span class="vl">50</span>
+
+  scaling_config {
+    min_size     = <span class="vl">2</span>
+    max_size     = <span class="vl">4</span>
+    desired_size = <span class="vl">2</span>
+  }
+
+  labels = {
+    <span class="st">"workload-type"</span> = <span class="st">"general"</span>
+  }
+}
+
+<span class="cm"># ─── GPU Node Group (ML inference) ───</span>
+<span class="kw">resource</span> "aws_eks_node_group" "gpu_nodes" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = <span class="st">"imentora-dev-gpu"</span>
+  node_role_arn   = aws_iam_role.eks_node.arn
+  subnet_ids      = var.private_subnet_ids
+
+  <span class="cm"># g4dn.xlarge: 4 vCPU, 16 GB RAM, NVIDIA T4 16 GB VRAM</span>
+  instance_types = [<span class="st">"g4dn.xlarge"</span>]
+  disk_size      = <span class="vl">100</span>  <span class="cm"># Larger disk for ML model files + Docker images with CUDA</span>
+  ami_type       = <span class="st">"AL2_x86_64_GPU"</span>  <span class="cm"># EKS GPU-optimized AMI with NVIDIA drivers</span>
+
+  scaling_config {
+    min_size     = <span class="vl">1</span>   <span class="cm"># At least 1 GPU node always running</span>
+    max_size     = <span class="vl">3</span>   <span class="cm"># Scale up for peak usage</span>
+    desired_size = <span class="vl">2</span>   <span class="cm"># Normal state</span>
+  }
+
+  labels = {
+    <span class="st">"workload-type"</span> = <span class="st">"gpu-inference"</span>
+  }
+
+  taint {
+    key    = <span class="st">"nvidia.com/gpu"</span>
+    value  = <span class="st">"true"</span>
+    effect = <span class="st">"NO_SCHEDULE"</span>  <span class="cm"># Only GPU-requesting pods land here</span>
+  }
+}
+
+<span class="cm"># ─── NVIDIA Device Plugin (required for GPU visibility) ───</span>
+<span class="cm"># Deploy via Helm or kubectl after cluster creation:</span>
+<span class="cm"># kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.5/nvidia-device-plugin.yml</span></div>
+  </div>
+
+  <div class="finding" style="border-left-color: var(--accent2);">
+    <h4>📦 K8s Deployment — GPU Scheduling</h4>
+    <div class="detail">App pods must include GPU resource request + toleration</div>
+    <div class="detail">Monitoring/ArgoCD pods land on CPU nodes (no toleration = no GPU)</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>K8s Deployment — GPU Pod Spec</span><span class="lang">YAML</span></div>
+    <div class="code-body"><span class="cm"># base/deployment.yaml (IMENTORA-gitops)</span>
+<span class="kw">spec</span>:
+  <span class="kw">containers</span>:
+  - <span class="kw">name</span>: imentora-app
+    <span class="kw">image</span>: <span class="st">664418964913.dkr.ecr.ap-south-1.amazonaws.com/imentora-dev-app:latest</span>
+    <span class="kw">ports</span>:
+    - <span class="kw">containerPort</span>: <span class="vl">8090</span>  <span class="cm"># ← Correct port from app.py</span>
+    <span class="kw">resources</span>:
+      <span class="kw">requests</span>:
+        <span class="kw">cpu</span>: <span class="st">"2"</span>
+        <span class="kw">memory</span>: <span class="st">"4Gi"</span>
+        <span class="kw">nvidia.com/gpu</span>: <span class="st">"1"</span>   <span class="cm"># ← Request 1 GPU</span>
+      <span class="kw">limits</span>:
+        <span class="kw">cpu</span>: <span class="st">"3"</span>
+        <span class="kw">memory</span>: <span class="st">"8Gi"</span>
+        <span class="kw">nvidia.com/gpu</span>: <span class="st">"1"</span>   <span class="cm"># ← Limit to 1 GPU</span>
+    <span class="kw">volumeMounts</span>:
+    - name: audio-temp
+      mountPath: /app/daily_standup/audio
+    - name: audio-temp
+      mountPath: /app/daily_standup/temp
+    - name: audio-temp
+      mountPath: /app/weekly_interview/audio
+  <span class="kw">tolerations</span>:
+  - <span class="kw">key</span>: <span class="st">"nvidia.com/gpu"</span>
+    <span class="kw">operator</span>: <span class="st">"Exists"</span>
+    <span class="kw">effect</span>: <span class="st">"NoSchedule"</span>
+  <span class="kw">nodeSelector</span>:
+    <span class="kw">workload-type</span>: gpu-inference
+  <span class="kw">volumes</span>:
+  - name: audio-temp
+    emptyDir:
+      sizeLimit: <span class="st">"5Gi"</span>  <span class="cm"># Ephemeral storage for audio files</span></div>
+  </div>
+</div>
+
+<!-- ============== REVISED PLAN ============== -->
+<div class="pnl container" id="revised">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(16,185,129,0.15); color: var(--accent4);">📐</div>
+    <div>
+      <h2>Revised Infrastructure Plan</h2>
+      <p>Updated based on actual code analysis</p>
+    </div>
+  </div>
+
+  <div class="vs-box">
+    <div class="vs-side">
+      <h5>Previous Plan</h5>
+      <div class="val" style="color: var(--accent5);">CPU Only</div>
+      <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">m5.xlarge × 3 nodes</div>
+    </div>
+    <div class="vs-mid">→</div>
+    <div class="vs-side">
+      <h5>Revised Plan</h5>
+      <div class="val" style="color: var(--accent4);">CPU + GPU Mixed</div>
+      <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">m5.xlarge × 2 + g4dn.xlarge × 2</div>
+    </div>
+  </div>
+
+  <table class="tbl">
+    <thead>
+      <tr><th>Resource</th><th>Previous</th><th>Revised</th><th>Why Changed</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>EKS CPU Nodes</td>
+        <td>m5.xlarge × 3</td>
+        <td style="color: var(--accent4);">m5.xlarge × 2</td>
+        <td>App pods move to GPU nodes; CPU nodes for monitoring/ArgoCD only</td>
+      </tr>
+      <tr>
+        <td>EKS GPU Nodes</td>
+        <td style="color: var(--accent5);">None</td>
+        <td style="color: var(--accent4);">g4dn.xlarge × 2</td>
+        <td>YOLO + InsightFace + SpeechBrain require NVIDIA T4 GPU</td>
+      </tr>
+      <tr>
+        <td>Container Port</td>
+        <td style="color: var(--accent5);">8030</td>
+        <td style="color: var(--accent4);">8090</td>
+        <td>Confirmed from app.py source code</td>
+      </tr>
+      <tr>
+        <td>Node Disk Size (GPU)</td>
+        <td>50 GB</td>
+        <td style="color: var(--accent4);">100 GB</td>
+        <td>Docker image with CUDA + PyTorch + ML models is ~8-12 GB</td>
+      </tr>
+      <tr>
+        <td>GPU AMI</td>
+        <td>Standard</td>
+        <td style="color: var(--accent4);">AL2_x86_64_GPU</td>
+        <td>Pre-installed NVIDIA drivers for CUDA 12.6</td>
+      </tr>
+      <tr>
+        <td>RDS Engine</td>
+        <td>MySQL only</td>
+        <td style="color: var(--accent3);">MySQL + possibly SQL Server</td>
+        <td>Both drivers found — need team confirmation</td>
+      </tr>
+      <tr>
+        <td>Docker Image Size</td>
+        <td>~500 MB</td>
+        <td style="color: var(--accent3);">~8-12 GB</td>
+        <td>PyTorch CUDA + ML model weights are massive</td>
+      </tr>
+      <tr>
+        <td>SSL in Container</td>
+        <td>Included</td>
+        <td style="color: var(--accent4);">Removed</td>
+        <td>ALB + ACM handles SSL; app runs HTTP inside cluster</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="finding" style="border-left-color: var(--accent3);">
+    <h4>⚠️ Remaining Question for Dev Team</h4>
+    <div class="detail danger">Which modules use MySQL vs SQL Server? (pyodbc vs mysql-connector)</div>
+    <div class="detail warn">Is streamlit==1.45.1 used in production? Or dev-only dashboard?</div>
+    <div class="detail warn">Is gTTS (Google TTS) used as fallback, or replaced by Edge TTS?</div>
+    <div class="detail warn">Are there MORE env vars in daily_standup/core/config.py and weekly_interview/core/config.py?</div>
+    <div class="detail">What data needs to be migrated from local MongoDB (192.168.48.201)?</div>
+  </div>
+</div>
+
+<!-- ============== DOCKERFILE DESIGN ============== -->
+<div class="pnl container" id="docker">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(236,72,153,0.15); color: var(--accent6);">🐳</div>
+    <div>
+      <h2>Dockerfile Design — GPU-Enabled</h2>
+      <p>Multi-stage build with CUDA support for ML inference</p>
+    </div>
+  </div>
+
+  <div class="alert warning">
+    <div class="icon">📦</div>
+    <div class="content">
+      <div class="title">Docker Image Will Be Large (~8-12 GB)</div>
+      <div class="desc">
+        PyTorch with CUDA + ultralytics + insightface + speechbrain + audio dependencies = very large image. This is normal for ML-based applications. ECR storage costs ~$0.10/GB/month so ~$1/month for the image. Build time will be ~10-15 minutes.
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>Dockerfile (Production GPU)</span><span class="lang">Docker</span></div>
+    <div class="code-body"><span class="cm"># ─── Stage 1: Builder ───</span>
+<span class="kw">FROM</span> nvidia/cuda:12.6.0-runtime-ubuntu22.04 <span class="kw">AS</span> builder
+
+<span class="kw">ENV</span> DEBIAN_FRONTEND=noninteractive
+<span class="kw">ENV</span> PYTHONUNBUFFERED=1
+<span class="kw">ENV</span> PYTHONDONTWRITEBYTECODE=1
+
+<span class="cm"># System dependencies</span>
+<span class="kw">RUN</span> apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-dev \
+    ffmpeg \
+    libsndfile1 \
+    portaudio19-dev \
+    build-essential \
+    unixodbc-dev \         <span class="cm"># For pyodbc (SQL Server)</span>
+    libgl1-mesa-glutils \  <span class="cm"># For OpenCV</span>
+    libglib2.0-0 \         <span class="cm"># For OpenCV</span>
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="cm"># Install Python dependencies</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip3 install --no-cache-dir \
+    torch==2.6.0+cu126 \
+    torchvision==0.21.0+cu126 \
+    torchaudio==2.6.0+cu126 \
+    --index-url https://download.pytorch.org/whl/cu126
+<span class="kw">RUN</span> pip3 install --no-cache-dir -r requirements.txt
+
+<span class="cm"># ─── Stage 2: Production ───</span>
+<span class="kw">FROM</span> nvidia/cuda:12.6.0-runtime-ubuntu22.04
+
+<span class="kw">ENV</span> DEBIAN_FRONTEND=noninteractive
+<span class="kw">ENV</span> PYTHONUNBUFFERED=1
+
+<span class="kw">RUN</span> apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip \
+    ffmpeg libsndfile1 portaudio19-dev \
+    unixodbc libgl1-mesa-glutils libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+<span class="cm"># Create non-root user</span>
+<span class="kw">RUN</span> groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m appuser
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="cm"># Copy Python packages from builder</span>
+<span class="kw">COPY</span> --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+<span class="kw">COPY</span> --from=builder /usr/local/bin /usr/local/bin
+
+<span class="cm"># Create required directories</span>
+<span class="kw">RUN</span> mkdir -p daily_standup/audio daily_standup/temp daily_standup/reports \
+             weekly_interview/audio weekly_interview/temp weekly_interview/reports \
+             static && \
+    chown -R appuser:appgroup /app
+
+<span class="cm"># Copy application code</span>
+<span class="kw">COPY</span> --chown=appuser:appgroup . .
+
+<span class="cm"># Remove certs directory (ALB handles SSL)</span>
+<span class="kw">RUN</span> rm -rf certs/ env/.env
+
+<span class="kw">USER</span> appuser
+<span class="kw">EXPOSE</span> 8090
+
+<span class="kw">HEALTHCHECK</span> --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8090/healthz')"
+
+<span class="cm"># Production: no reload, 4 workers</span>
+<span class="kw">CMD</span> ["uvicorn", "app:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8090", \
+     "--workers", "4", \
+     "--ws-ping-interval", "20", \
+     "--ws-ping-timeout", "20", \
+     "--timeout-keep-alive", "30"]</div>
+  </div>
+</div>
+
+<!-- ============== UPDATED COSTS ============== -->
+<div class="pnl container" id="cost">
+  <div class="sec-head">
+    <div class="sec-icon" style="background: rgba(245,158,11,0.15); color: var(--accent3);">💰</div>
+    <div>
+      <h2>Updated Cost Estimates (with GPU)</h2>
+      <p>Revised pricing including g4dn.xlarge GPU nodes</p>
+    </div>
+  </div>
+
+  <div class="cost-card">
+    <h3>🟢 Dev Environment (On-Demand)</h3>
+    <div class="cost-row"><span class="svc">EKS Control Plane</span><span class="amt">$73</span></div>
+    <div class="cost-row"><span class="svc">CPU Nodes (2× m5.xlarge)</span><span class="amt">$276</span></div>
+    <div class="cost-row"><span class="svc">GPU Nodes (1× g4dn.xlarge) ← NEW</span><span class="amt">$380</span></div>
+    <div class="cost-row"><span class="svc">RDS MySQL (db.t3.micro, Single-AZ)</span><span class="amt">$13</span></div>
+    <div class="cost-row"><span class="svc">DocumentDB (db.t3.medium, 1 instance)</span><span class="amt">$56</span></div>
+    <div class="cost-row"><span class="svc">ElastiCache Redis (cache.t3.micro)</span><span class="amt">$13</span></div>
+    <div class="cost-row"><span class="svc">NAT Gateway (single)</span><span class="amt">$35</span></div>
+    <div class="cost-row"><span class="svc">ALB + ECR + CloudWatch + S3</span><span class="amt">$29</span></div>
+    <div class="cost-total"><span>Dev Total</span><span class="amt">~$875/month</span></div>
+  </div>
+
+  <div class="cost-card" style="border-color: rgba(139,92,246,0.2);">
+    <h3>🔴 Production Environment (On-Demand)</h3>
+    <div class="cost-row"><span class="svc">EKS Control Plane</span><span class="amt">$73</span></div>
+    <div class="cost-row"><span class="svc">CPU Nodes (2× m5.xlarge)</span><span class="amt">$276</span></div>
+    <div class="cost-row"><span class="svc">GPU Nodes (2× g4dn.xlarge) ← NEW</span><span class="amt">$760</span></div>
+    <div class="cost-row"><span class="svc">RDS MySQL (db.t3.medium, Multi-AZ)</span><span class="amt">$98</span></div>
+    <div class="cost-row"><span class="svc">DocumentDB (db.r5.large, 1+1)</span><span class="amt">$400</span></div>
+    <div class="cost-row"><span class="svc">ElastiCache Redis (cache.t3.small, 1+1)</span><span class="amt">$50</span></div>
+    <div class="cost-row"><span class="svc">NAT Gateway (HA, 2 AZs)</span><span class="amt">$70</span></div>
+    <div class="cost-row"><span class="svc">ALB + WAF + CloudWatch + Misc</span><span class="amt">$67</span></div>
+    <div class="cost-total"><span>Prod Total</span><span class="amt">~$1,794/month</span></div>
+  </div>
+
+  <div class="cost-card" style="border-color: rgba(16,185,129,0.2);">
+    <h3>💡 Cost Optimization Options</h3>
+    <div class="cost-row"><span class="svc">GPU Spot Instances (g4dn.xlarge, ~70% off)</span><span class="amt">saves ~$530/mo</span></div>
+    <div class="cost-row"><span class="svc">1-Year Reserved (GPU nodes, ~40% off)</span><span class="amt">saves ~$300/mo</span></div>
+    <div class="cost-row"><span class="svc">Scale GPU to 0 at night (if not 24/7)</span><span class="amt">saves ~$190/mo</span></div>
+    <div class="cost-row"><span class="svc">Start with 1 GPU node in dev (not 2)</span><span class="amt">saves ~$380/mo</span></div>
+    <div class="cost-total"><span>Optimized Dev (1 GPU Spot)</span><span class="amt">~$400/month</span></div>
+  </div>
+
+  <div class="alert info">
+    <div class="icon">📊</div>
+    <div class="content">
+      <div class="title">GPU is the Biggest Cost Driver</div>
+      <div class="desc">
+        GPU nodes account for <strong>43%</strong> of total dev cost and <strong>42%</strong> of prod cost. Key optimizations:<br>
+        → Use <strong>Spot Instances</strong> for GPU in dev (70% savings, acceptable interruption risk)<br>
+        → Use <strong>Cluster Autoscaler</strong> to scale GPU nodes to 0 during off-hours<br>
+        → Long-term: Split biometric_auth into its own microservice, so GPU is only used when needed<br>
+        → Consider: Does biometric auth need to run 24/7, or only during interview sessions?
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.pnl').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.t).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
